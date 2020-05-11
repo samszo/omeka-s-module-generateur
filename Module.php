@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright Daniel Berthereau, 2017-2019
+ * Copyright Daniel Berthereau, 2017-2020
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -41,21 +41,16 @@ use Generic\AbstractModule;
 use Omeka\Api\Representation\AbstractEntityRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Api\Representation\ItemRepresentation;
-use Omeka\Api\Representation\ItemSetRepresentation;
-use Omeka\Api\Representation\MediaRepresentation;
 use Omeka\Api\Representation\UserRepresentation;
 use Omeka\Entity\AbstractEntity;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Mvc\MvcEvent;
 use Zend\Permissions\Acl\Acl as ZendAcl;
-use Zend\ServiceManager\ServiceLocatorInterface;
 
 class Module extends AbstractModule
 {
     const NAMESPACE = __NAMESPACE__;
-
-    protected $dependency = 'CustomVocab';
 
     public function onBootstrap(MvcEvent $event)
     {
@@ -66,63 +61,23 @@ class Module extends AbstractModule
         $this->addAclRoleAndRules();
     }
 
-    public function install(ServiceLocatorInterface $services)
+    protected function preInstall()
     {
+        $services = $this->getServiceLocator();
         $module = $services->get('Omeka\ModuleManager')->getModule('Generic');
-        if ($module && version_compare($module->getIni('version'), '3.0.17', '<')) {
+        if ($module && version_compare($module->getIni('version'), '3.0.18', '<')) {
             $translator = $services->get('MvcTranslator');
             $message = new \Omeka\Stdlib\Message(
                 $translator->translate('This module requires the module "%s", version %s or above.'), // @translate
-                'Generic', '3.0.17'
+                'Generic', '3.0.18'
             );
             throw new \Omeka\Module\Exception\ModuleCannotInstallException($message);
         }
-
-        parent::install($services);
     }
 
-    protected function postInstall()
+    protected function postUninstall()
     {
         $services = $this->getServiceLocator();
-        $api = $services->get('Omeka\ApiManager');
-        $settings = $services->get('Omeka\Settings');
-
-        // TODO Replace the resource templates for generations that are not items.
-
-        $resourceTemplateSettings = [
-            'Generation' => [
-                'oa:motivatedBy' => 'oa:Generation',
-                'rdf:value' => 'oa:hasBody',
-                'oa:hasPurpose' => 'oa:hasBody',
-                'dcterms:language' => 'oa:hasBody',
-                'oa:hasSource' => 'oa:hasTarget',
-                'rdf:type' => 'oa:hasTarget',
-                'dcterms:format' => 'oa:hasTarget',
-            ],
-        ];
-
-        $resourceTemplateData = $settings->get('generateur_resource_template_data', []);
-        foreach ($resourceTemplateSettings as $label => $data) {
-            try {
-                $resourceTemplate = $api->read('resource_templates', ['label' => $label])->getContent();
-            } catch (\Omeka\Api\Exception\NotFoundException $e) {
-                $message = new \Omeka\Stdlib\Message(
-                    'The settings to manage the generation template are not saved. You shoud edit the resource template "Generation" manually.' // @translate
-                );
-                $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
-                $messenger->addWarning($message);
-                continue;
-            }
-            // Add the special resource template settings.
-            $resourceTemplateData[$resourceTemplate->id()] = $data;
-        }
-        $settings->set('generateur_resource_template_data', $resourceTemplateData);
-    }
-
-    public function uninstall(ServiceLocatorInterface $serviceLocator)
-    {
-        $this->setServiceLocator($serviceLocator);
-        $services = $serviceLocator;
 
         if (!class_exists(\Generic\InstallResources::class)) {
             require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
@@ -133,30 +88,10 @@ class Module extends AbstractModule
         $installResources = new \Generic\InstallResources($services);
         $installResources = $installResources();
 
-        if (!empty($_POST['remove-vocabulary'])) {
-            $prefix = 'rdf';
-            $installResources->removeVocabulary($prefix);
-            $prefix = 'oa';
-            $installResources->removeVocabulary($prefix);
-        }
-
-        if (!empty($_POST['remove-custom-vocab'])) {
-            $customVocab = 'Generation oa:motivatedBy';
-            $installResources->removeCustomVocab($customVocab);
-            $customVocab = 'Generation Body oa:hasPurpose';
-            $installResources->removeCustomVocab($customVocab);
-            $customVocab = 'Generation Target dcterms:format';
-            $installResources->removeCustomVocab($customVocab);
-            $customVocab = 'Generation Target rdf:type';
-            $installResources->removeCustomVocab($customVocab);
-        }
-
         if (!empty($_POST['remove-template'])) {
-            $resourceTemplate = 'Generation';
+            $resourceTemplate = 'Génération';
             $installResources->removeResourceTemplate($resourceTemplate);
         }
-
-        parent::uninstall($serviceLocator);
     }
 
     public function warnUninstall(Event $event)
@@ -170,9 +105,7 @@ class Module extends AbstractModule
         $serviceLocator = $this->getServiceLocator();
         $t = $serviceLocator->get('MvcTranslator');
 
-        $vocabularyLabels = 'RDF Concepts" / "Web Generation Ontology';
-        $customVocabs = 'Generation oa:motivatedBy" / "oa:hasPurpose" / "rdf:type" / "dcterms:format';
-        $resourceTemplates = 'Generation';
+        $resourceTemplates = 'Génération';
 
         $html = '<p>';
         $html .= '<strong>';
@@ -183,26 +116,6 @@ class Module extends AbstractModule
         $html .= '<p>';
         $html .= $t->translate('All the generations will be removed.'); // @translate
         $html .= '</p>';
-
-        $html .= '<p>';
-        $html .= sprintf(
-            $t->translate('If checked, the values of the vocabularies "%s" will be removed too. The class of the resources that use a class of these vocabularies will be reset.'), // @translate
-            $vocabularyLabels
-        );
-        $html .= '</p>';
-        $html .= '<label><input name="remove-vocabulary" type="checkbox" form="confirmform">';
-        $html .= sprintf($t->translate('Remove the vocabularies "%s"'), $vocabularyLabels); // @translate
-        $html .= '</label>';
-
-        $html .= '<p>';
-        $html .= sprintf(
-            $t->translate('If checked, the custom vocabs "%s" will be removed too.'), // @translate
-            $customVocabs
-        );
-        $html .= '</p>';
-        $html .= '<label><input name="remove-custom-vocab" type="checkbox" form="confirmform">';
-        $html .= sprintf($t->translate('Remove the custom vocabs "%s"'), $customVocabs); // @translate
-        $html .= '</label>';
 
         $html .= '<p>';
         $html .= sprintf(
@@ -219,8 +132,6 @@ class Module extends AbstractModule
 
     /**
      * Add ACL role and rules for this module.
-     *
-     * @todo Keep rights for Generation only (body and  target are internal classes).
      */
     protected function addAclRoleAndRules()
     {
@@ -234,17 +145,13 @@ class Module extends AbstractModule
             $acl->addRole('guest');
         }
 
-        $acl
-            ->addRole(Acl::ROLE_ANNOTATOR)
-            ->addRoleLabel(Acl::ROLE_ANNOTATOR, 'Annotator'); // @translate
-
         $settings = $services->get('Omeka\Settings');
         // TODO Set rights to false when the visibility filter will be ready.
-        // TODO Check if public can generateur and flag, and read generations and own ones.
-        $publicViewGenerateur = $settings->get('generateur_public_allow_view', true);
-        if ($publicViewGenerateur) {
-            $publicAllowGenerateur = $settings->get('generateur_public_allow_generateur', false);
-            if ($publicAllowGenerateur) {
+        // TODO Check if public can generate and flag, and read generations and own ones.
+        $publicViewGeneration = $settings->get('generateur_public_allow_view', true);
+        if ($publicViewGeneration) {
+            $publicAllowGenerate = $settings->get('generateur_public_allow_generate', false);
+            if ($publicAllowGenerate) {
                 $this->addRulesForVisitorAnnotators($acl);
             } else {
                 $this->addRulesForVisitors($acl);
@@ -253,7 +160,6 @@ class Module extends AbstractModule
 
         // Identified users can generateur. Reviewer and above can approve. Admins
         // can delete.
-        $this->addRulesForAnnotator($acl);
         $this->addRulesForAnnotators($acl);
         $this->addRulesForApprobators($acl);
         $this->addRulesForAdmins($acl);
@@ -312,83 +218,6 @@ class Module extends AbstractModule
     }
 
     /**
-     * Add ACL rules for annotator.
-     *
-     * @param ZendAcl $acl
-     */
-    protected function addRulesForAnnotator(ZendAcl $acl)
-    {
-        // The annotator has less rights than Researcher for core resources, but
-        // similar rights for generations that Author has for core resources.
-        // The rights related to generation are set with all other annotators.
-        $acl
-            ->allow(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                [
-                    'Omeka\Controller\Admin\Index',
-                    'Omeka\Controller\Admin\Item',
-                    'Omeka\Controller\Admin\ItemSet',
-                    'Omeka\Controller\Admin\Media',
-                ],
-                [
-                    'index',
-                    'browse',
-                    'show',
-                    'show-details',
-                ]
-            )
-
-            ->allow(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                [
-                    'Omeka\Controller\Admin\Item',
-                    'Omeka\Controller\Admin\ItemSet',
-                    'Omeka\Controller\Admin\Media',
-                ],
-                [
-                    'search',
-                    'sidebar-select',
-                ]
-            )
-
-            ->allow(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                ['Omeka\Controller\Admin\User'],
-                ['show', 'edit']
-            )
-            ->allow(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                ['Omeka\Api\Adapter\UserAdapter'],
-                ['read', 'update', 'search']
-            )
-            ->allow(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                [\Omeka\Entity\User::class],
-                ['read']
-            )
-            ->allow(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                [\Omeka\Entity\User::class],
-                ['update', 'change-password', 'edit-keys'],
-                new \Omeka\Permissions\Assertion\IsSelfAssertion
-            )
-
-            // TODO Remove this rule for Omeka >= 1.2.1.
-            ->deny(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                [
-                    'Omeka\Controller\SiteAdmin\Index',
-                    'Omeka\Controller\SiteAdmin\Page',
-                ]
-            )
-            ->deny(
-                [\Generateur\Permissions\Acl::ROLE_ANNOTATOR],
-                ['Omeka\Controller\Admin\User'],
-                ['browse']
-            );
-    }
-
-    /**
      * Add ACL rules for annotators (not visitor).
      *
      * @param ZendAcl $acl
@@ -396,7 +225,6 @@ class Module extends AbstractModule
     protected function addRulesForAnnotators(ZendAcl $acl)
     {
         $annotators = [
-            \Generateur\Permissions\Acl::ROLE_ANNOTATOR,
             \Omeka\Permissions\Acl::ROLE_RESEARCHER,
             \Omeka\Permissions\Acl::ROLE_AUTHOR,
         ];
@@ -530,9 +358,9 @@ class Module extends AbstractModule
         // Add the Open Generation part to the representation.
         $representations = [
             'user' => UserRepresentation::class,
-            'item_sets' => ItemSetRepresentation::class,
+            // 'item_sets' => ItemSetRepresentation::class,
             'items' => ItemRepresentation::class,
-            'media' => MediaRepresentation::class,
+            // 'media' => MediaRepresentation::class,
         ];
         foreach ($representations as $representation) {
             $sharedEventManager->attach(
@@ -560,8 +388,8 @@ class Module extends AbstractModule
         // Events for the public front-end.
         $controllers = [
             'Omeka\Controller\Site\Item',
-            'Omeka\Controller\Site\ItemSet',
-            'Omeka\Controller\Site\Media',
+            // 'Omeka\Controller\Site\ItemSet',
+            // 'Omeka\Controller\Site\Media',
         ];
         foreach ($controllers as $controller) {
             // Add the generations to the resource show public pages.
@@ -589,8 +417,8 @@ class Module extends AbstractModule
         // Events for the admin board.
         $controllers = [
             'Omeka\Controller\Admin\Item',
-            'Omeka\Controller\Admin\ItemSet',
-            'Omeka\Controller\Admin\Media',
+            // 'Omeka\Controller\Admin\ItemSet',
+            // 'Omeka\Controller\Admin\Media',
         ];
         foreach ($controllers as $controller) {
             $sharedEventManager->attach(
@@ -678,11 +506,7 @@ class Module extends AbstractModule
             ->getContent();
         if ($generations) {
             $jsonLd = $event->getParam('jsonLd');
-            // It must be a property, not a class. Cf. iiif too, that uses generations = iiif_prezi:generations
-            // Note: Omeka uses singular for "o:item_set".
-            $jsonLd['o:generations'] = $generations;
-            // @deprecated
-            $jsonLd['oa:Generation'] = $generations;
+            $jsonLd['o:generation'] = $generations;
             $event->setParam('jsonLd', $jsonLd);
         }
     }

@@ -4,40 +4,7 @@ namespace Generateur;
 return [
     'entity_manager' => [
         'resource_discriminator_map' => [
-            // The three entities are sub-classes of the abstract class Entity\GenerationPart,
-            // that is a subclass of Resource.
-            // This solution allows to search the property values in the three parts simpler.
-            // The other solution is to make the main generation a sub-part too, and to do
-            // the search inside the abstract part, and to use an adapter for it (like Resource).
-            // It is cleaner, even it may be more complex because bodies and targets
-            // depends on the main generation part. So if needed later. Note that the ids
-            // should be stable.
-
             Entity\Generation::class => Entity\Generation::class,
-            // oa:hasBody can be used by oa:Generation only.
-            Entity\GenerationBody::class => Entity\GenerationBody::class,
-            // oa:hasTarget can be used by oa:Generation only.
-            Entity\GenerationTarget::class => Entity\GenerationTarget::class,
-            // May be added for full coverage of data model (useless for current modules):
-            // oa:hasSelector can be used by body (rare) or target (mainly for
-            // cartographic generation here). The selector is not a Resource,
-            // but depends on oa:ResourceSelection.
-            // oa:refinedBy can be used by oa:hasSelector and oa:hasState only.
-            // The oa:refinedBy is another selector or state.
-            // oa:hasSource (for body (rare) or target).
-            // as:items
-            // oa:hasState
-            // oa:hasStartSelector
-            // oa:hasEndSelector
-            // oa:renderedVia
-            // oa:styledBy
-            // as:generator
-            // dcterms:creator
-            // schema:audience
-            // @link https://www.w3.org/TR/generation-vocab/#as-application
-            // TODO Any property can be another resource (uri), so it may be genericized, but the structure of
-            // Omeka is not designed in such a way (and all values must be in the table value). Use datatype to bypass? So oa:resource:item?
-            // The current desing simplifies search queries too.
         ],
         'mapping_classes_paths' => [
             dirname(__DIR__) . '/src/Entity',
@@ -66,8 +33,6 @@ return [
         'factories' => [
             'showGenerateurForm' => Service\ViewHelper\ShowGenerateurFormFactory::class,
             'generations' => Service\ViewHelper\GenerationsFactory::class,
-            // For compatibility with Omeka < 1.2.1.
-            'resourceTemplateSelect' => Service\ViewHelper\ResourceTemplateSelectFactory::class,
         ],
     ],
     'form_elements' => [
@@ -75,8 +40,6 @@ return [
             Form\GenerateurForm::class => Service\Form\GenerateurFormFactory::class,
             Form\QuickSearchForm::class => Service\Form\QuickSearchFormFactory::class,
             Form\ResourceForm::class => Service\Form\ResourceFormFactory::class,
-            // For compatibility with Omeka < 1.2.1.
-            Form\Element\ResourceTemplateSelect::class => Service\Form\Element\ResourceTemplateSelectFactory::class,
         ],
     ],
     'controllers' => [
@@ -87,7 +50,7 @@ return [
     ],
     'controller_plugins' => [
         'invokables' => [
-            'isAnnotable' => Mvc\Controller\Plugin\IsAnnotable::class,
+            'isGenerable' => Mvc\Controller\Plugin\IsGenerable::class,
             'resourceGenerations' => Mvc\Controller\Plugin\ResourceGenerations::class,
             'totalResourceGenerations' => Mvc\Controller\Plugin\TotalResourceGenerations::class,
         ],
