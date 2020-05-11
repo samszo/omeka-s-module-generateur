@@ -16,9 +16,13 @@ class Generation extends Resource
     protected $id;
 
     /**
+     * @var \Omeka\Entity\Resource
+     *
+     * This relation is unidirectrional because it's not possible to modify the
+     * doctrine annotation for the inverse side (inversedBy="resources").
+     *
      * @ManyToOne(
-     *     targetEntity="Omeka\Entity\Resource",
-     *     inversedBy="resources"
+     *     targetEntity="Omeka\Entity\Resource"
      * )
      * @JoinColumn(
      *      nullable=false,

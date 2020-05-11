@@ -12,14 +12,14 @@ class Generation extends \Generateur\Entity\Generation implements \Doctrine\ORM\
      *      three parameters, being respectively the proxy object to be initialized, the method that triggered the
      *      initialization process and an array of ordered parameters that were passed to that method.
      *
-     * @see \Doctrine\Common\Persistence\Proxy::__setInitializer
+     * @see \Doctrine\Common\Proxy\Proxy::__setInitializer
      */
     public $__initializer__;
 
     /**
      * @var \Closure the callback responsible of loading properties that need to be copied in the cloned object
      *
-     * @see \Doctrine\Common\Persistence\Proxy::__setCloner
+     * @see \Doctrine\Common\Proxy\Proxy::__setCloner
      */
     public $__cloner__;
 
@@ -34,7 +34,7 @@ class Generation extends \Generateur\Entity\Generation implements \Doctrine\ORM\
      * @var array properties to be lazy loaded, with keys being the property
      *            names and values being their default values
      *
-     * @see \Doctrine\Common\Persistence\Proxy::__getLazyProperties
+     * @see \Doctrine\Common\Proxy\Proxy::__getLazyProperties
      */
     public static $lazyPropertiesDefaults = [];
 
@@ -64,10 +64,10 @@ class Generation extends \Generateur\Entity\Generation implements \Doctrine\ORM\
     public function __sleep()
     {
         if ($this->__isInitialized__) {
-            return ['__isInitialized__', 'generation', 'part', 'targets', 'bodies', 'id', 'owner', 'resourceClass', 'resourceTemplate', 'thumbnail', 'isPublic', 'created', 'modified', 'values'];
+            return ['__isInitialized__', 'id', 'resource', 'owner', 'resourceClass', 'resourceTemplate', 'thumbnail', 'title', 'isPublic', 'created', 'modified', 'values'];
         }
 
-        return ['__isInitialized__', 'generation', 'part', 'targets', 'bodies', 'id', 'owner', 'resourceClass', 'resourceTemplate', 'thumbnail', 'isPublic', 'created', 'modified', 'values'];
+        return ['__isInitialized__', 'id', 'resource', 'owner', 'resourceClass', 'resourceTemplate', 'thumbnail', 'title', 'isPublic', 'created', 'modified', 'values'];
     }
 
     /**
@@ -187,72 +187,6 @@ class Generation extends \Generateur\Entity\Generation implements \Doctrine\ORM\
     /**
      * {@inheritDoc}
      */
-    public function getTargets()
-    {
-
-        $this->__initializer__ && $this->__initializer__->__invoke($this, 'getTargets', []);
-
-        return parent::getTargets();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getBodies()
-    {
-
-        $this->__initializer__ && $this->__initializer__->__invoke($this, 'getBodies', []);
-
-        return parent::getBodies();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function setGeneration(\Generateur\Entity\Generation $generation)
-    {
-
-        $this->__initializer__ && $this->__initializer__->__invoke($this, 'setGeneration', [$generation]);
-
-        return parent::setGeneration($generation);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getGeneration()
-    {
-
-        $this->__initializer__ && $this->__initializer__->__invoke($this, 'getGeneration', []);
-
-        return parent::getGeneration();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function postPersist(\Doctrine\ORM\Event\LifecycleEventArgs $eventArgs)
-    {
-
-        $this->__initializer__ && $this->__initializer__->__invoke($this, 'postPersist', [$eventArgs]);
-
-        return parent::postPersist($eventArgs);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getPart()
-    {
-
-        $this->__initializer__ && $this->__initializer__->__invoke($this, 'getPart', []);
-
-        return parent::getPart();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function getId()
     {
         if ($this->__isInitialized__ === false) {
@@ -263,6 +197,28 @@ class Generation extends \Generateur\Entity\Generation implements \Doctrine\ORM\
         $this->__initializer__ && $this->__initializer__->__invoke($this, 'getId', []);
 
         return parent::getId();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function setResource(\Omeka\Entity\Resource $resource)
+    {
+
+        $this->__initializer__ && $this->__initializer__->__invoke($this, 'setResource', [$resource]);
+
+        return parent::setResource($resource);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getResource()
+    {
+
+        $this->__initializer__ && $this->__initializer__->__invoke($this, 'getResource', []);
+
+        return parent::getResource();
     }
 
     /**
@@ -351,6 +307,28 @@ class Generation extends \Generateur\Entity\Generation implements \Doctrine\ORM\
         $this->__initializer__ && $this->__initializer__->__invoke($this, 'getThumbnail', []);
 
         return parent::getThumbnail();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function setTitle($title)
+    {
+
+        $this->__initializer__ && $this->__initializer__->__invoke($this, 'setTitle', [$title]);
+
+        return parent::setTitle($title);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getTitle()
+    {
+
+        $this->__initializer__ && $this->__initializer__->__invoke($this, 'getTitle', []);
+
+        return parent::getTitle();
     }
 
     /**
