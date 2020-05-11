@@ -33,9 +33,9 @@ class ShowGenerateurForm extends AbstractHelper
 
         /** @var \Generateur\Form\GenerateurForm $form */
         $form = $this->formElementManager->get(GenerateurForm::class);
+        $form->setOptions($options);
         $form->init();
         $form->setData($data);
-        $form->setOptions($options);
         $form->setAttributes($attributes);
         $view->vars()->offsetSet('generateurForm', $form);
         return $view->partial('common/generateur-form');

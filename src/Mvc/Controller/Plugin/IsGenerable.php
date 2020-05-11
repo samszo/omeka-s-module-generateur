@@ -4,22 +4,22 @@ namespace Generateur\Mvc\Controller\Plugin;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Zend\Mvc\Controller\Plugin\AbstractPlugin;
 
-class IsAnnotable extends AbstractPlugin
+class IsGenerable extends AbstractPlugin
 {
-    protected $annotables = [
+    protected $generables = [
         \Omeka\Api\Representation\ItemRepresentation::class,
-        \Omeka\Api\Representation\MediaRepresentation::class,
-        \Omeka\Api\Representation\ItemSetRepresentation::class,
+        // \Omeka\Api\Representation\MediaRepresentation::class,
+        // \Omeka\Api\Representation\ItemSetRepresentation::class,
     ];
 
     /**
-     * Check if a resource is annotable.
+     * Check if a resource is generable.
      *
      * @param AbstractResourceEntityRepresentation $resource
      * @return bool
      */
     public function __invoke(AbstractResourceEntityRepresentation $resource)
     {
-        return in_array(get_class($resource), $this->annotables);
+        return in_array(get_class($resource), $this->generables);
     }
 }

@@ -15,245 +15,36 @@ class GenerateurForm extends Form
     public function init()
     {
         // TODO Move all static params into generateur controller?
-        // TODO Improve the custom vocab module to keep "literal" as value type.
         // TODO Convert with fieldsets to allow check via getData().
 
-        $api = $this->api;
+        $resourceTemplate = $this->api->searchOne('resource_templates', ['label' => 'Génération'])->getContent();
+        $this
+            ->add([
+                'type' => Element\Hidden::class,
+                'name' => 'o:resource_template[o:id]',
+                'attributes' => ['value' => $resourceTemplate ? $resourceTemplate->id() : ''],
+            ])
 
-        $resourceTemplateId = $api->read('resource_templates', ['label' => 'Generation'])->getContent()->id();
-        $vocabulary = $api->read('vocabularies', ['prefix' => 'oa'])->getContent();
-        $resourceClassId = $api->read('resource_classes', ['vocabulary' => $vocabulary->id(), 'localName' => 'Generation'])->getContent()->id();
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'o:resource_template[o:id]',
-            'attributes' => ['value' => $resourceTemplateId],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'o:resource_class[o:id]',
-            'attributes' => ['value' => $resourceClassId],
-        ]);
+            ->add([
+                'name' => 'o:is_public',
+                'type' => Element\Checkbox::class,
+                'options' => [
+                    'label' => 'Is public', // @translate
+                ],
+                'attributes' => [
+                    'value' => 1,
+                ],
+            ])
 
-        // Motivated by.
-        $customVocab = $api->read('custom_vocabs', ['label' => 'Generation oa:motivatedBy'])->getContent();
-        $terms = $customVocab->terms();
-        $terms = is_array($terms) ? $terms : array_filter(array_map('trim', explode(PHP_EOL, $terms)));
-        $terms = array_combine($terms, $terms);
-        $this->add([
-            'type' => Element\Select::class,
-            'name' => 'oa:motivatedBy[0][@value]',
-            'options' => [
-                'label' => 'Motivated by', // @translate
-                'value_options' => $terms,
-                'empty_option' => 'Select the motivation of this generation…', // @translate
-            ],
-            'attributes' => [
-                'rows' => 15,
-                'id' => 'oa:motivatedBy[0][@value]',
-                'class' => 'chosen-select',
-                'data-placeholder' => 'Select the motivation of this generation…', // @translate
-            ],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:motivatedBy[0][property_id]',
-            'attributes' => ['value' => $this->propertyId('oa:motivatedBy')],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:motivatedBy[0][type]',
-            'attributes' => ['value' => 'customvocab:' . $customVocab->id()],
-        ]);
-
-        // Generation body.
-        $this->initGenerationBody();
-
-        // Generation target.
-        $this->initGenerationTarget();
-
-        $this->add([
-            'name' => 'o:is_public',
-            'type' => Element\Checkbox::class,
-            'options' => [
-                'label' => 'Is public', // @translate
-            ],
-            'attributes' => [
-                'value' => 1,
-            ],
-        ]);
-
-        // Submit.
-        $this->add([
-            'type' => Element\Submit::class,
-            'name' => 'submit',
-            'attributes' => [
-                'value' => 'Generateur it!', // @translate
-                'class' => 'far fa-hand-o-up',
-            ],
-        ]);
-
-        $inputFilter = $this->getInputFilter();
-        $inputFilter->add([
-            'name' => 'oa:motivatedBy[0][@value]',
-            'required' => false,
-        ]);
-        $inputFilter->add([
-            'name' => 'oa:hasBody[0][oa:hasPurpose][0][@value]',
-            'required' => false,
-        ]);
-        $inputFilter->add([
-            'name' => 'oa:hasTarget[0][rdf:type][0][@value]',
-            'required' => false,
-        ]);
-    }
-
-    protected function initGenerationBody()
-    {
-        $api = $this->api;
-
-        // Rdf value.
-        $this->add([
-            'type' => Element\Textarea::class,
-            'name' => 'oa:hasBody[0][rdf:value][0][@value]',
-            'options' => [
-                'label' => 'Content of the generation', // @translate
-                'info' => 'The value of the body is generally the textual content of the generation.', // @translate
-            ],
-            'attributes' => [
-                'rows' => 15,
-                'id' => 'oa:hasBody[0][rdf:value][0][@value]',
-                'class' => 'media-text',
-                'placeholder' => 'Any plain text or html…', // @translate
-                // TODO The body is not required in some cases, for example highlight: improve the dynamic validator.
-                'required' => false,
-            ],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasBody[0][rdf:value][0][property_id]',
-            'attributes' => ['value' => $this->propertyId('rdf:value')],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasBody[0][rdf:value][0][type]',
-            'attributes' => ['value' => 'literal'],
-        ]);
-
-        // Has purpose (only for the body, so different of motivated by).
-        $customVocab = $api->read('custom_vocabs', ['label' => 'Generation oa:motivatedBy'])->getContent();
-        $terms = $customVocab->terms();
-        $terms = is_array($terms) ? $terms : array_filter(array_map('trim', explode(PHP_EOL, $terms)));
-        $terms = array_combine($terms, $terms);
-        $this->add([
-            'type' => Element\Select::class,
-            'name' => 'oa:hasBody[0][oa:hasPurpose][0][@value]',
-            'options' => [
-                'label' => 'Purpose of this content', // @translate
-                'value_options' => $terms,
-                'empty_option' => 'Select the purpose of this body content, if needed…', // @translate
-            ],
-            'attributes' => [
-                'rows' => 15,
-                'id' => 'oa:hasBody[0][oa:hasPurpose][0][@value]',
-                'class' => 'chosen-select',
-                'data-placeholder' => 'Select the purpose of this body content, if needed…', // @translate
-            ],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasBody[0][oa:hasPurpose][0][property_id]',
-            'attributes' => ['value' => $this->propertyId('oa:hasPurpose')],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasBody[0][oa:hasPurpose][0][type]',
-            'attributes' => ['value' => 'customvocab:' . $customVocab->id()],
-        ]);
-    }
-
-    protected function initGenerationTarget()
-    {
-        $api = $this->api;
-
-        // The source of the generation target is the current resource.
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][oa:hasSource][0][property_id]',
-            'attributes' => ['value' => $this->propertyId('oa:hasSource')],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][oa:hasSource][0][type]',
-            'attributes' => ['value' => 'resource'],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][oa:hasSource][0][value_resource_id]',
-        ]);
-
-        // Note, oa:hasSelector references an entity that have a rdf:type and a
-        // rdf:value, or it is a simple uri.
-        $customVocab = $api->read('custom_vocabs', ['label' => 'Generation Target rdf:type'])->getContent();
-        $terms = $customVocab->terms();
-        $terms = is_array($terms) ? $terms : array_filter(array_map('trim', explode(PHP_EOL, $terms)));
-        $terms = array_combine($terms, $terms);
-        $this->add([
-            'type' => Element\Select::class,
-            'name' => 'oa:hasTarget[0][rdf:type][0][@value]',
-            'options' => [
-                'label' => 'Type of the target selector', // @translate
-                'value_options' => $terms,
-                'empty_option' => 'Select the selector type to specify a subpart of the resource, if needed…', // @translate
-            ],
-            'attributes' => [
-                'rows' => 15,
-                'id' => 'oa:motivatedBy[0][@value]',
-                'class' => 'chosen-select',
-                'data-placeholder' => 'Select the selector type to specify a subpart of the resource, if needed…', // @translate
-            ],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][rdf:type][0][property_id]',
-            'attributes' => ['value' => $this->propertyId('rdf:type')],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][rdf:type][0][type]',
-            'attributes' => ['value' => 'customvocab:' . $customVocab->id()],
-        ]);
-
-        $this->add([
-            'type' => Element\Textarea::class,
-            'name' => 'oa:hasTarget[0][rdf:value][0][@value]',
-            'options' => [
-                'label' => 'Target selector', // @translate
-                'info' => 'Allows to delimit a portion of the resource (part of a text, an image or an item…).', // @translate
-            ],
-            'attributes' => [
-                'rows' => 15,
-                'id' => 'oa:hasTarget[0][rdf:value][0][@value]',
-                'class' => 'media-text',
-                'placeholder' => 'Any xml, json, svg, media api url, media id, etc. according to the type of selector.', // @translate
-            ],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][rdf:value][0][property_id]',
-            'attributes' => ['value' => $this->propertyId('rdf:value')],
-        ]);
-        $this->add([
-            'type' => Element\Hidden::class,
-            'name' => 'oa:hasTarget[0][rdf:value][0][type]',
-            'attributes' => ['value' => 'literal'],
-        ]);
-    }
-
-    protected function propertyId($term)
-    {
-        $property = $this->api
-            ->searchOne('properties', ['term' => $term])->getContent();
-        return $property ? $property->id() : null;
+            ->add([
+                'type' => Element\Submit::class,
+                'name' => 'submit',
+                'attributes' => [
+                    'value' => 'Generate!', // @translate
+                    'class' => 'generations fas fa-redo',
+                ],
+            ])
+        ;
     }
 
     /**

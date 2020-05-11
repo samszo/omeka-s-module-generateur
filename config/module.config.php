@@ -54,11 +54,6 @@ return [
             'resourceGenerations' => Mvc\Controller\Plugin\ResourceGenerations::class,
             'totalResourceGenerations' => Mvc\Controller\Plugin\TotalResourceGenerations::class,
         ],
-        'factories' => [
-            'generationPartMapper' => Service\ControllerPlugin\GenerationPartMapperFactory::class,
-            'divideMergedValues' => Service\ControllerPlugin\DivideMergedValuesFactory::class,
-            'resourceTemplateGenerationPartMap' => Service\ControllerPlugin\ResourceTemplateGenerationPartMapFactory::class,
-        ],
     ],
     'navigation' => [
         'AdminResource' => [
