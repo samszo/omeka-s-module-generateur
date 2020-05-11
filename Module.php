@@ -42,7 +42,6 @@ use Omeka\Api\Representation\AbstractEntityRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Api\Representation\ItemRepresentation;
 use Omeka\Api\Representation\UserRepresentation;
-use Omeka\Entity\AbstractEntity;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Mvc\MvcEvent;
@@ -355,9 +354,9 @@ class Module extends AbstractModule
 
     public function attachListeners(SharedEventManagerInterface $sharedEventManager)
     {
-        // Add the Open Generation part to the representation.
+        // Add the Generation to the representation.
         $representations = [
-            'user' => UserRepresentation::class,
+            // 'users' => UserRepresentation::class,
             // 'item_sets' => ItemSetRepresentation::class,
             'items' => ItemRepresentation::class,
             // 'media' => MediaRepresentation::class,
@@ -377,21 +376,6 @@ class Module extends AbstractModule
             'view.layout',
             [$this, 'addHeadersAdmin']
         );
-
-        // Events for the public front-end.
-        $controllers = [
-            'Omeka\Controller\Site\Item',
-            // 'Omeka\Controller\Site\ItemSet',
-            // 'Omeka\Controller\Site\Media',
-        ];
-        foreach ($controllers as $controller) {
-            // Add the generations to the resource show public pages.
-            $sharedEventManager->attach(
-                $controller,
-                'view.show.after',
-                [$this, 'displayPublic']
-            );
-        }
 
         // Manage the search query with special fields that are not present in
         // default search form.
@@ -718,14 +702,15 @@ class Module extends AbstractModule
 
         $services = $this->getServiceLocator();
         $viewHelpers = $services->get('ViewHelperManager');
-        $api = $viewHelpers->get('api');
         $url = $viewHelpers->get('url');
 
-        $options = [];
+        $options = [
+            'resource' => $resource,
+        ];
         $attributes = [];
         $attributes['action'] = $url(
             'admin/generation/default',
-            ['action' => 'generateur'],
+            ['action' => 'generate'],
             ['query' => ['redirect' => $resource->adminUrl() . '#generateur']]
         );
 
@@ -739,38 +724,8 @@ class Module extends AbstractModule
         //     $data = $params()->fromPost();
         // }
         $data = [];
-        // TODO Make the property id of oa:hasTarget/oa:hasSource static or integrate it to avoid a double query.
-        $propertyId = $api->searchOne('properties', ['term' => 'oa:hasSource'])->getContent()->id();
-        // TODO Make the form use fieldset.
-        $data['oa:hasTarget[0][oa:hasSource][0][property_id]'] = $propertyId;
-        $data['oa:hasTarget[0][oa:hasSource][0][type]'] = 'resource';
-        $data['oa:hasTarget[0][oa:hasSource][0][value_resource_id]'] = $resource->id();
 
         echo $view->showGenerateurForm($resource, $options, $attributes, $data);
-    }
-
-    /**
-     * Display a partial for a resource in public.
-     *
-     * @param Event $event
-     */
-    public function displayPublic(Event $event)
-    {
-        $serviceLocator = $this->getServiceLocator();
-        $siteSettings = $serviceLocator->get('Omeka\Settings\Site');
-        $view = $event->getTarget();
-        $resource = $view->resource;
-        $resourceName = $resource->resourceName();
-        $appendMap = [
-            'item_sets' => 'generateur_append_item_set_show',
-            'items' => 'generateur_append_item_show',
-            'media' => 'generateur_append_media_show',
-        ];
-        if (!$siteSettings->get($appendMap[$resourceName])) {
-            return;
-        }
-
-        echo $view->generations($resource);
     }
 
     /**
@@ -821,41 +776,6 @@ class Module extends AbstractModule
         return $userIsAllowed(Generation::class, 'read');
     }
 
-    protected function isGenerationEnabledForResource(AbstractEntityRepresentation $resource)
-    {
-        // TODO Some type of generation may be removed for some generation types.
-        return true;
-
-        if ($resource->getControllerName() === 'user') {
-            return true;
-        }
-        $settings = $this->getServiceLocator()->get('Omeka\Settings');
-        $commentResources = $settings->get('generateur_resources');
-        $resourceName = $resource->resourceName();
-        return in_array($resourceName, $commentResources);
-    }
-
-    /**
-     * Helper to get the column id of an entity.
-     *
-     * Note: Resource representation have method resourceName(), but site page
-     * and user don't. Site page has no getControllerName().
-     *
-     * @param AbstractEntity $resource
-     * @return string
-     */
-    protected function columnNameOfEntity(AbstractEntity $resource)
-    {
-        $entityColumnNames = [
-            \Omeka\Entity\ItemSet::class => 'resource_id',
-            \Omeka\Entity\Item::class => 'resource_id',
-            \Omeka\Entity\Media::class => 'resource_id',
-            \Omeka\Entity\User::class => 'owner_id',
-        ];
-        $entityColumnName = $entityColumnNames[$resource->getResourceId()];
-        return $entityColumnName;
-    }
-
     /**
      * Helper to get the column id of a representation.
      *
@@ -873,7 +793,6 @@ class Module extends AbstractModule
             'media' => 'resource_id',
             'user' => 'owner_id',
         ];
-        $entityColumnName = $entityColumnNames[$representation->getControllerName()];
-        return $entityColumnName;
+        return $entityColumnNames[$representation->getControllerName()];
     }
 }

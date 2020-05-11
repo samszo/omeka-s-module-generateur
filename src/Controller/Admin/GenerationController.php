@@ -93,13 +93,13 @@ class GenerationController extends AbstractActionController
      *
      * Equivalent to action "add", but without specific page (so via ajax).
      */
-    public function generateurAction()
+    public function generateAction()
     {
         $redirect = $this->params()->fromQuery('redirect');
 
         $isAjax = $this->getRequest()->isXmlHttpRequest();
         if (!$redirect && !$isAjax) {
-            $this->messenger()->addError('Only a resource can be generateurd.'); // @translate
+            $this->messenger()->addError('Only a resource can be generated.'); // @translate
             $urlHelper = $this->viewHelpers()->get('url');
             return $this->redirect()->toUrl($urlHelper('admin'));
         }
@@ -117,7 +117,7 @@ class GenerationController extends AbstractActionController
         $form = $this->getForm(GenerateurForm::class);
         $data = $this->params()->fromPost();
 
-        $resourceId = $data['oa:hasTarget'][0]['oa:hasSource'][0]['value_resource_id'];
+        $resourceId = $data['o:resource']['o:id'];
         if (empty($resourceId)) {
             if ($isAjax) {
                 return $this->jsonError('Resource not found.', Response::STATUS_CODE_404); // @translate
@@ -152,164 +152,16 @@ class GenerationController extends AbstractActionController
         // TODO Check of data form is currently not available.
         // $data = $form->getData();
 
-        // Check if there is a value or a selector.
-        // TODO Improve the checks of the generation and move them in the right place.
-        $bodyValue = (isset($data['oa:hasBody'][0]['rdf:value'][0]['@value'])
-                && strlen(trim($data['oa:hasBody'][0]['rdf:value'][0]['@value'])))
-            ? trim($data['oa:hasBody'][0]['rdf:value'][0]['@value'])
-            : null;
-        $targetValue = (isset($data['oa:hasTarget'][0]['rdf:value'][0]['@value'])
-                && strlen(trim($data['oa:hasTarget'][0]['rdf:value'][0]['@value'])))
-            ? trim($data['oa:hasTarget'][0]['rdf:value'][0]['@value'])
-            : null;
-        if (is_null($bodyValue) && is_null($targetValue)) {
-            $message = 'The generation is empty.'; // @translate
+        $resourceTemplate = $api->searchOne('resource_templates', ['label' => 'Génération'])->getContent();
+        if (!$resourceTemplate) {
             if ($isAjax) {
-                return $this->jsonError($message);
+                return $this->jsonError('Resource template "Génération" not found.', Response::STATUS_CODE_404); // @translate
             } else {
-                $this->messenger()->addError($message);
+                $this->messenger()->addError('Resource template "Génération" not found'); // @translate
                 return $this->redirect()->toUrl($redirect);
             }
         }
-
-        // Add the format of the body.
-        if (is_null($bodyValue)) {
-            // TODO Remove the full body when there is no body.
-            // $data['o:resource_class']['o:id'] = null;
-            // Has purpose is used to add information about body text only.
-            unset($data['oa:hasPurpose']);
-        } else {
-            // "text/plain" is useless with TextualBody.
-            $format = $this->isHtml($bodyValue) ? 'text/html' : null;
-            if ($format) {
-                // TODO Use DataTypeRDF
-            }
-        }
-
-        // TODO Check the format of the selector and the value.
-        if (!is_null($targetValue)) {
-            $format = $this->determineMediaType($targetValue);
-            if ($format) {
-                $customVocab = $api->read('custom_vocabs', [
-                    'label' => 'Generation Target dcterms:format',
-                ], [], ['responseContent' => 'reference'])->getContent();
-                $property = $api->searchOne('properties', [
-                    'term' => 'dcterms:format',
-                ], [], ['responseContent' => 'reference'])->getContent();
-                $data['oa:hasTarget'][0]['dcterms:format'][] = [
-                    'property_id' => $property->id(),
-                    'type' => 'customvocab:' . $customVocab->id(),
-                    '@value' => $format,
-                ];
-            }
-
-            $targetSelectorType = $data['oa:hasTarget'][0]['rdf:type'][0]['@value'];
-            if (in_array($targetSelectorType, ['o:Item', 'o:ItemSet', 'o:Media'])) {
-                $resourceType = $resource->getResourceJsonLdType();
-                if ($targetSelectorType === $resourceType) {
-                    $message = 'A resource can’t have the same resource as selector.'; // @translate
-                    if ($isAjax) {
-                        return $this->jsonError($message);
-                    } else {
-                        $this->messenger()->addError($message);
-                        return $this->redirect()->toUrl($redirect);
-                    }
-                }
-                if ($resourceType === 'o:Media') {
-                    $message = 'A media can’t have a resource selector.'; // @translate
-                    if ($isAjax) {
-                        return $this->jsonError($message);
-                    } else {
-                        $this->messenger()->addError($message);
-                        return $this->redirect()->toUrl($redirect);
-                    }
-                }
-                if ($resourceType === 'o:Item' && $targetSelectorType === 'o:ItemSet') {
-                    $message = 'An item can’t have an item set selector.'; // @translate
-                    if ($isAjax) {
-                        return $this->jsonError($message);
-                    } else {
-                        $this->messenger()->addError($message);
-                        return $this->redirect()->toUrl($redirect);
-                    }
-                }
-
-                $targetSelectorResourceType = $targetSelectorType === 'o:Item' ? 'items' : 'media';
-
-                // Check if the target value is a resource url.
-                if (!((int) $targetValue)) {
-                    $url = $this->viewHelpers()->get('url');
-                    $testTargetValue = null;
-                    $apiUrl = $url('api/default', ['resource' => $targetSelectorResourceType], ['force_canonical' => true]) . '/';
-                    if (mb_strpos($targetValue, $apiUrl) === 0) {
-                        $testTargetValue = (int) mb_substr($targetValue, mb_strlen($apiUrl));
-                    } else {
-                        $apiUrl = $url('api/default', ['resource' => $targetSelectorResourceType]) . '/';
-                        if (mb_strpos($targetValue, $apiUrl) === 0) {
-                            $testTargetValue = (int) mb_substr($targetValue, mb_strlen($apiUrl));
-                        }
-                    }
-                    if (empty($testTargetValue)) {
-                        $message = new Message('The target selector "%s" cannot be identified: it should be a resource id or a resource api url.', // @translate
-                            $targetValue);
-                        if ($isAjax) {
-                            return $this->jsonError($message);
-                        } else {
-                            $this->messenger()->addError($message);
-                            return $this->redirect()->toUrl($redirect);
-                        }
-                    }
-                    $targetValue = $testTargetValue;
-                }
-
-                $selectorResource = $api->searchOne($targetSelectorResourceType, ['id' => (int) $targetValue])->getContent();
-                if (empty($selectorResource)) {
-                    $message = new Message('There is no %s with id #%s.', $targetSelectorType, $targetValue); // @translate
-                    if ($isAjax) {
-                        return $this->jsonError($message);
-                    } else {
-                        $this->messenger()->addError($message);
-                        return $this->redirect()->toUrl($redirect);
-                    }
-                }
-
-                $targetValue = (int) $targetValue;
-                $test = false;
-                switch ($resource->getResourceJsonLdType()) {
-                    case 'o:ItemSet':
-                        // TODO Check if the item is in the item set.
-                        // TODO Check if the media is in the item set.
-                        $test = true;
-                        break;
-                    case 'o:Item':
-                        // Check if the media is in the item.
-                        foreach ($resource->media() as $media) {
-                            if ($media->id() === $targetValue) {
-                                $test = true;
-                                break;
-                            }
-                        }
-                        break;
-                }
-                if (!$test) {
-                    $message = new Message('There is no %s with id #%s that belongs to resource #%s.', // @translate
-                        $targetSelectorType, $targetValue, $resourceId);
-                    if ($isAjax) {
-                        return $this->jsonError($message);
-                    } else {
-                        $this->messenger()->addError($message);
-                        return $this->redirect()->toUrl($redirect);
-                    }
-                }
-
-                // Convert the text selector into a resource selector.
-                $data['oa:hasTarget'][0]['rdf:value'][0] = [
-                    'property_id' => $data['oa:hasTarget'][0]['rdf:value'][0]['property_id'],
-                    'type' => 'resource',
-                    'value_resource_id' => $targetValue,
-                ];
-            }
-        }
+        $data['o:resource_template']['o:id'] = $resourceTemplate->id();
 
         // The form contains errors if any.
         $response = $this->api($form)->create('generations', $data);
@@ -336,8 +188,8 @@ class GenerationController extends AbstractActionController
         }
 
         $message = new Message(
-            'Resource #%d successfully generateurd.', // @translate
-            $resourceId
+            'Generation #%1$d successfully generated for resource #%2$d.', // @translate
+            $generation->id(), $resourceId
         );
         $this->messenger()->addSuccess($message);
         return $this->redirect()->toUrl($redirect);
@@ -372,7 +224,7 @@ class GenerationController extends AbstractActionController
 
         // TODO Make data available from the form.
         // $data = $form->getData();
-        $data = $resource->divideMergedValues($data);
+        $data['o:resource']['o:id'] = $resource->resource()->id();
         $response = $this->api($form)->update('generations', $resource->id(), $data);
         if (!$response) {
             return $view;
@@ -429,7 +281,7 @@ class GenerationController extends AbstractActionController
         $redirect = $this->params()->fromQuery('redirect');
         return $redirect
             ? $this->redirect()->toUrl($redirect)
-            : $this->redirect()->toRoute('admin/generateur');
+            : $this->redirect()->toRoute('admin/generation');
     }
 
     public function batchDeleteConfirmAction()
@@ -507,111 +359,5 @@ class GenerationController extends AbstractActionController
             'status' => 'error',
             'message' => $message,
         ]);
-    }
-
-    /** TODO Move all the checks in adapter or in form. */
-
-    /**
-     * Detect if a string is html or not.
-     *
-     * @see \Generateur\Api\Representation\GenerationRepresentation::isHtml()
-     *
-     * @param string $string
-     * @return bool
-     */
-    protected function isHtml($string)
-    {
-        return $string != strip_tags($string);
-    }
-
-    /**
-     * Determine the media type of a string.
-     *
-     * Only generation target media-types are managed.
-     *
-     * @todo Simplify and improve the determination of the media-type (via stream).
-     * @see \Generateur\Mvc\Controller\Plugin\DivideMergedValues::determineMediaType()
-     *
-     * @param string $string
-     * @return string|null
-     */
-    protected function determineMediaType($string)
-    {
-        $string = trim($string);
-        if (strlen($string) == 0) {
-            return;
-        }
-        // TODO Json is a format, not a mime-type: may be "application/geo+json.
-        if ($string === 'null' || (json_decode($string) !== null)) {
-            return 'application/json';
-        }
-        if (strpos($string, '<svg ') === 0) {
-            return 'image/svg+xml';
-        }
-        if (strpos($string, '<!DOCTYPE html>') === 0) {
-            return 'text/html';
-        }
-        if (strpos($string, '<?xml ') === 0) {
-            $pos = strpos($string, '<', 1);
-            $str = trim(substr($string, $pos));
-            if (strpos($str, '<svg ') === 0) {
-                return 'image/svg+xml';
-            }
-            if (strpos($str, '<html>') === 0 || strpos($str, '<html ') === 0) {
-                return 'text/html';
-            }
-
-            // There may be a doctype.
-            $pos = strpos($str, '<', 1);
-            $str = trim(substr($str, $pos));
-            if (strpos($str, '<svg ') === 0) {
-                return 'image/svg+xml';
-            }
-            if (strpos($str, '<html>') === 0 || strpos($str, '<html ') === 0) {
-                return 'text/html';
-            }
-
-            return 'application/xml';
-        }
-        // TODO Partial xml/html.
-        if ($this->isHtml($string)) {
-            return 'text/html';
-        }
-        // TODO Find a better way to check if a string is a wkt.
-        $wktTags = [
-            'GEOMETRY',
-            'POINT',
-            'LINESTRING',
-            'POLYGON',
-            'MULTIPOINT',
-            'MULTILINESTRING',
-            'MULTIPOLYGON',
-            'GEOMETRYCOLLECTION',
-            'CIRCULARSTRING',
-            'COMPOUNDCURVE',
-            'CURVEPOLYGON',
-            'MULTICURVE',
-            'MULTISURFACE',
-            'CURVE',
-            'SURFACE',
-            'POLYHEDRALSURFACE',
-            'TIN',
-            'TRIANGLE',
-            'CIRCLE',
-            'CIRCLEMARKER',
-            'GEODESICSTRING',
-            'ELLIPTICALCURVE',
-            'NURBSCURVE',
-            'CLOTHOID',
-            'SPIRALCURVE',
-            'COMPOUNDSURFACE',
-            'BREPSOLID',
-            'AFFINEPLACEMENT',
-        ];
-        // Get first word to check wkt.
-        $firstWord = strtoupper(strtok($string, " (\n\r"));
-        if (strpos($string, '(') && in_array($firstWord, $wktTags)) {
-            return 'application/wkt';
-        }
     }
 }

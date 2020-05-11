@@ -17,8 +17,15 @@ class GenerateurForm extends Form
         // TODO Move all static params into generateur controller?
         // TODO Convert with fieldsets to allow check via getData().
 
+        $resource = $this->getOption('resource');
         $resourceTemplate = $this->api->searchOne('resource_templates', ['label' => 'Génération'])->getContent();
+
         $this
+            ->add([
+                'type' => Element\Hidden::class,
+                'name' => 'o:resource[o:id]',
+                'attributes' => ['value' => $resource ? $resource->id() : ''],
+            ])
             ->add([
                 'type' => Element\Hidden::class,
                 'name' => 'o:resource_template[o:id]',
