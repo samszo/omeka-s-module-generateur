@@ -151,7 +151,7 @@ class Module extends AbstractModule
         if ($publicViewGeneration) {
             $publicAllowGenerate = $settings->get('generateur_public_allow_generate', false);
             if ($publicAllowGenerate) {
-                $this->addRulesForVisitorAnnotators($acl);
+                $this->addRulesForVisitorCreators($acl);
             } else {
                 $this->addRulesForVisitors($acl);
             }
@@ -159,7 +159,7 @@ class Module extends AbstractModule
 
         // Identified users can generateur. Reviewer and above can approve. Admins
         // can delete.
-        $this->addRulesForAnnotators($acl);
+        $this->addRulesForCreators($acl);
         $this->addRulesForApprobators($acl);
         $this->addRulesForAdmins($acl);
     }
@@ -192,11 +192,11 @@ class Module extends AbstractModule
     }
 
     /**
-     * Add ACL rules for annotator visitors.
+     * Add ACL rules for visitors who can generate.
      *
      * @param ZendAcl $acl
      */
-    protected function addRulesForVisitorAnnotators(ZendAcl $acl)
+    protected function addRulesForVisitorCreators(ZendAcl $acl)
     {
         $acl
             ->allow(
@@ -217,53 +217,53 @@ class Module extends AbstractModule
     }
 
     /**
-     * Add ACL rules for annotators (not visitor).
+     * Add ACL rules for users who can generate (not visitor).
      *
      * @param ZendAcl $acl
      */
-    protected function addRulesForAnnotators(ZendAcl $acl)
+    protected function addRulesForCreators(ZendAcl $acl)
     {
-        $annotators = [
+        $roles = [
             \Omeka\Permissions\Acl::ROLE_RESEARCHER,
             \Omeka\Permissions\Acl::ROLE_AUTHOR,
         ];
         $acl
             ->allow(
-                $annotators,
+                $roles,
                 [Generation::class],
                 ['create']
             )
             ->allow(
-                $annotators,
+                $roles,
                 [Generation::class],
                 ['update', 'delete'],
                 new \Omeka\Permissions\Assertion\OwnsEntityAssertion
             )
             ->allow(
-                $annotators,
+                $roles,
                 [Api\Adapter\GenerationAdapter::class],
                 ['search', 'read', 'create', 'update', 'delete', 'batch_create', 'batch_update', 'batch_delete']
             )
             ->allow(
-                $annotators,
+                $roles,
                 [Controller\Site\GenerationController::class]
             )
             ->allow(
-                $annotators,
+                $roles,
                 [Controller\Admin\GenerationController::class],
                 ['index', 'search', 'browse', 'show', 'show-details', 'add', 'edit', 'delete', 'delete-confirm', 'flag']
             );
     }
 
     /**
-     * Add ACL rules for approbators.
+     * Add ACL rules for reviewers and editors (approbators).
      *
      * @param ZendAcl $acl
      */
     protected function addRulesForApprobators(ZendAcl $acl)
     {
         // Admin are approbators too, but rights are set below globally.
-        $approbators = [
+        $roles = [
             \Omeka\Permissions\Acl::ROLE_REVIEWER,
             \Omeka\Permissions\Acl::ROLE_EDITOR,
         ];
@@ -286,16 +286,16 @@ class Module extends AbstractModule
                 ['read', 'create', 'update', 'delete']
             )
             ->allow(
-                $approbators,
+                $roles,
                 [Api\Adapter\GenerationAdapter::class],
                 ['search', 'read', 'create', 'update', 'delete', 'batch_create', 'batch_update', 'batch_delete']
             )
             ->allow(
-                $approbators,
+                $roles,
                 [Controller\Site\GenerationController::class]
             )
             ->allow(
-                $approbators,
+                $roles,
                 Controller\Admin\GenerationController::class,
                 [
                     'index',
@@ -336,13 +336,13 @@ class Module extends AbstractModule
      */
     protected function addRulesForAdmins(ZendAcl $acl)
     {
-        $admins = [
+        $roles = [
             \Omeka\Permissions\Acl::ROLE_GLOBAL_ADMIN,
             \Omeka\Permissions\Acl::ROLE_SITE_ADMIN,
         ];
         $acl
             ->allow(
-                $admins,
+                $roles,
                 [
                     Generation::class,
                     Api\Adapter\GenerationAdapter::class,
