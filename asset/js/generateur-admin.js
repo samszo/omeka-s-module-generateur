@@ -1,5 +1,5 @@
 /*
- * Copyright Daniel Berthereau, 2017-2018
+ * Copyright Daniel Berthereau, 2017-2020
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -30,9 +30,9 @@ $(document).ready(function() {
     /**
      * Main simple search.
      */
-    var searchAnnotations = `<input type="radio" name="resource-type" id="search-annotation" value="annotation" data-input-placeholder="${Omeka.jsTranslate('Search annotations')}" data-action="${searchAnnotationsUrl}">
-    <label for="search-annotation">${Omeka.jsTranslate('Annotations')}</label>`;
-    $('#search-form #advanced-options').append(searchAnnotations);
+    var searchGenerations = `<input type="radio" name="resource-type" id="search-generation" value="generation" data-input-placeholder="${Omeka.jsTranslate('Search generations')}" data-action="${searchGenerationsUrl}">
+    <label for="search-generation">${Omeka.jsTranslate('Generations')}</label>`;
+    $('#search-form #advanced-options').append(searchGenerations);
 
     /**
      * Advanced search
@@ -66,7 +66,7 @@ $(document).ready(function() {
     });
 
     /**
-     * Better display of big annotation bodies.
+     * Better display of big generations.
      */
     if ( $.isFunction($.fn.webuiPopover) ) {
         $('a.popover').webuiPopover('destroy').webuiPopover({
@@ -87,7 +87,7 @@ $(document).ready(function() {
     }
 
     /**
-     * Append an annotation sub-form to the resource template form.
+     * Append an generation sub-form to the resource template form.
      *
      * @todo Allows Omeka to append a form element via triggers in Zend form or js.
      * @see Omeka resource-template-form.js
@@ -107,46 +107,46 @@ $(document).ready(function() {
             : null;
     }
 
-    var annotationInfo = function() {
+    var generationInfo = function() {
         return `
     <br />
-    <div id="annotation-info">
-        <h3>${Omeka.jsTranslate('Web Open Annotation')}</h3>
+    <div id="generation-info">
+        <h3>${Omeka.jsTranslate('Web Open Generation')}</h3>
         <p>
-            ${Omeka.jsTranslate('With the class <code>oa:Annotation</code>, it’s important to choose the part of the annotation to which the property is attached:')}
-            ${Omeka.jsTranslate('It can be the annotation itself (default), but the body or the target too.')}
+            ${Omeka.jsTranslate('With the class <code>oa:Generation</code>, it’s important to choose the part of the generation to which the property is attached:')}
+            ${Omeka.jsTranslate('It can be the generation itself (default), but the body or the target too.')}
         </p>
         <p>${Omeka.jsTranslate('For example, to add an indication on a uncertainty of  a highlighted segment, the property should be attached to the target, but the description of a link should be attached to the body.')}</p>
         <p>${Omeka.jsTranslate('Standard non-ambivalent properties are automatically managed.')}</p>
     </div>`;
     }
 
-    // Template of  the annotation sub-form (application/view/omeka/admin/resource-template/form.phtml).
-    var annotationPartInput = function(propertyId, annotationPart) {
-        annotationPart = annotationPart || 'oa:Annotation';
-        return `<input class="annotation-part" type="hidden" name="o:resource_template_property[${propertyId}][data][annotation_part]" value="${annotationPart}">`;
+    // Template of  the generation sub-form (application/view/omeka/admin/resource-template/form.phtml).
+    var generationPartInput = function(propertyId, generationPart) {
+        generationPart = generationPart || 'oa:Generation';
+        return `<input class="generation-part" type="hidden" name="o:resource_template_property[${propertyId}][data][generation_part]" value="${generationPart}">`;
     }
-    var annotationPartForm = function(annotationPart) {
-        var checked_2 = (annotationPart === 'oa:hasBody') ? 'checked="checked" ' : '';
-        var checked_3 = (annotationPart === 'oa:hasTarget') ? 'checked="checked" ' : '';
+    var generationPartForm = function(generationPart) {
+        var checked_2 = (generationPart === 'oa:hasBody') ? 'checked="checked" ' : '';
+        var checked_3 = (generationPart === 'oa:hasTarget') ? 'checked="checked" ' : '';
         var checked_1 = (checked_2 === '' && checked_3 === '') ? 'checked="checked" ' : '';
         var html = `
-    <div id="annotation-options" class="field">
-        <h3>${Omeka.jsTranslate('Annotation')}</h3>
-        <div id="annotation-part" class="option">
-            <label for="annotation-part">${Omeka.jsTranslate('Annotation part')}</label>
-            <span>${Omeka.jsTranslate('To comply with Annotation data model, select the part of the annotation this property will belong to.')}</span>
+    <div id="generation-options" class="field">
+        <h3>${Omeka.jsTranslate('Generation')}</h3>
+        <div id="generation-part" class="option">
+            <label for="generation-part">${Omeka.jsTranslate('Generation part')}</label>
+            <span>${Omeka.jsTranslate('To comply with Generation data model, select the part of the generation this property will belong to.')}</span>
             <span><i>${Omeka.jsTranslate('This option cannot be imported/exported currently.')}</i></span><br />
-            <input type="radio" name="annotation_part" ${checked_1}value="oa:Annotation" /> ${Omeka.jsTranslate('Annotation')}<br />
-            <input type="radio" name="annotation_part" ${checked_2}value="oa:hasBody" /> ${Omeka.jsTranslate('Annotation body')}<br />
-            <input type="radio" name="annotation_part" ${checked_3}value="oa:hasTarget" /> ${Omeka.jsTranslate('Annotation target')}
+            <input type="radio" name="generation_part" ${checked_1}value="oa:Generation" /> ${Omeka.jsTranslate('Generation')}<br />
+            <input type="radio" name="generation_part" ${checked_2}value="oa:hasBody" /> ${Omeka.jsTranslate('Generation body')}<br />
+            <input type="radio" name="generation_part" ${checked_3}value="oa:hasTarget" /> ${Omeka.jsTranslate('Generation target')}
         </div>
     </div>`;
         return html;
     }
 
     // Initialization during load.
-    if (resourceClassTerm($('#resourcetemplateform select[name="o:resource_class[o:id]"]').val()) === 'oa:Annotation') {
+    if (resourceClassTerm($('#resourcetemplateform select[name="o:resource_class[o:id]"]').val()) === 'oa:Generation') {
         // Set hidden params inside the form for each properties of  the resource template.
         var addNewPropertyRowUrl = propertyList.data('addNewPropertyRowUrl')
         var baseUrl = addNewPropertyRowUrl.split('?')[0];
@@ -154,30 +154,30 @@ $(document).ready(function() {
         baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
         baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
         baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
-        var resourceTemplateDataUrl = baseUrl + '/annotation/resource-template-data';
+        var resourceTemplateDataUrl = baseUrl + '/generation/resource-template-data';
         $.get(resourceTemplateDataUrl, {resource_template_id: resourceTemplateId})
             .done(function(data) {
                 propertyList.find('li.property').each(function() {
                     var propertyId = $(this).data('property-id');
-                    var annotationPart = data[propertyId] || '';
-                    $(this).find('.data-type').after(annotationPartInput(propertyId, annotationPart));
+                    var generationPart = data[propertyId] || '';
+                    $(this).find('.data-type').after(generationPartInput(propertyId, generationPart));
                 });
             });
         // Initialization of the sidebar.
-        $('#edit-sidebar .confirm-main').append(annotationPartForm());
-        $('#content').append(annotationInfo());
+        $('#edit-sidebar .confirm-main').append(generationPartForm());
+        $('#content').append(generationInfo());
     }
 
-    // Set/unset the sub-form when the class oa:Annotation is selected.
+    // Set/unset the sub-form when the class oa:Generation is selected.
     $(document).on('change', '#resourcetemplateform select[name="o:resource_class[o:id]"]', function(evt, params) {
         var termId = $('#resourcetemplateform select[name="o:resource_class[o:id]"]').val();
         var term = resourceClassTerm(termId);
-        if (term === 'oa:Annotation') {
-            $('#edit-sidebar .confirm-main').append(annotationPartForm());
-            $('#content').append(annotationInfo());
+        if (term === 'oa:Generation') {
+            $('#edit-sidebar .confirm-main').append(generationPartForm());
+            $('#content').append(generationInfo());
         } else {
-            $('#annotation-options').remove();
-            $('#annotation-info').remove();
+            $('#generation-options').remove();
+            $('#generation-info').remove();
         }
     });
 
@@ -188,20 +188,20 @@ $(document).ready(function() {
             // Resource templates cannot be assigned duplicate properties.
             return;
         }
-        propertyList.find('li:last-child').append(annotationPartInput(propertyId));
+        propertyList.find('li:last-child').append(generationPartInput(propertyId));
     });
 
     propertyList.on('click', '.property-edit', function(e) {
         e.preventDefault();
         var prop = $(this).closest('.property');
-        var annotationPart = prop.find('.annotation-part');
-        var annotationPartVal = annotationPart.val() || 'oa:Annotation';
-        $('#annotation-part input[name=annotation_part][value="' + annotationPartVal + '"]').prop('checked', true)
+        var generationPart = prop.find('.generation-part');
+        var generationPartVal = generationPart.val() || 'oa:Generation';
+        $('#generation-part input[name=generation_part][value="' + generationPartVal + '"]').prop('checked', true)
             .trigger("click");
 
         // Save the value for the current property (the other values are managed by resource-template-form.js).
         $('#set-changes').on('click.setchanges', function(e) {
-            annotationPart.val($('#annotation-part input[name="annotation_part"]:checked').val());
+            generationPart.val($('#generation-part input[name="generation_part"]:checked').val());
         });
     });
 

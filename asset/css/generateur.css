@@ -1,6 +1,6 @@
 @media screen {
-    /* Annotation show */
-    .annotations .annotation-caption {
+    /* generation show */
+    .generations .generation-caption {
         background-color: rgba(0,0,0,0.04);
         font-family: bold;
         padding: 6px;
@@ -8,8 +8,8 @@
         font-weight: bold;
         text-align: left;
     }
-    #annotation-bodies .meta-group .meta-group,
-    #annotation-targets .meta-group .meta-group {
+    #generation-bodies .meta-group .meta-group,
+    #generation-targets .meta-group .meta-group {
         overflow: hidden;
         display: -webkit-box;
         display: flex;
@@ -17,14 +17,14 @@
         justify-content: flex-end;
         flex-wrap: wrap;
     }
-    #annotation-bodies .meta-group .meta-group h4,
-    #annotation-targets .meta-group .meta-group h4 {
+    #generation-bodies .meta-group .meta-group h4,
+    #generation-targets .meta-group .meta-group h4 {
         width: 22.22222%;
         vertical-align: top;
         padding: 6px 0;
     }
-    #annotation-bodies .meta-group .meta-group .value,
-    #annotation-targets .meta-group .meta-group .value {
+    #generation-bodies .meta-group .meta-group .value,
+    #generation-targets .meta-group .meta-group .value {
         padding: 6px;
         margin-bottom: 0;
         word-wrap: break-word;
@@ -32,7 +32,7 @@
     }
 
     /* Resource show details */
-    .annotations .o-icon-private {
+    .generations .o-icon-private {
         display: inline-block;
         vertical-align: bottom;
         margin-left: .5em;
@@ -40,27 +40,27 @@
     }
 
     /* Adapted from core _screen.scss #linked-resources and .linked-resource */
-    #annotations table {
+    #generations table {
         margin-bottom: 0;
     }
-    #annotations .annotation {
+    #generations .generation {
         margin-bottom: 24px;
     }
 
-    #annotations table {
+    #generations table {
         width: 100%;
         border-spacing: 0;
         table-layout: fixed;
     }
-    #annotations table,
-    #annotations table.tablesaw {
+    #generations table,
+    #generations table.tablesaw {
         margin-bottom: 12px;
         border: 1px solid #dfdfdf;
         border-radius: 3px;
         border-collapse: separate;
     }
 
-    #annotations caption {
+    #generations caption {
         background-color: rgba(0,0,0,0.04);
         font-family: bold;
         padding: 6px;
@@ -68,44 +68,44 @@
         font-weight: bold;
         text-align: left;
     }
-    #annotations caption span:not(.resource-name) {
+    #generations caption span:not(.resource-name) {
         font-weight: normal;
     }
-    #annotations caption span.annotation-created {
+    #generations caption span.generation-created {
         font-size: smaller;
     }
-    #annotations caption span.annotation-owner {
+    #generations caption span.generation-owner {
         font-size: smaller;
         border-left: #888888 1px solid;
         margin-left: 0;
         padding-left: 6px;
     }
-    #annotations th {
+    #generations th {
        border-bottom: 3px solid #dfdfdf;
     }
-    .annotation-body,
-    .annotation-target {
+    .generation-body,
+    .generation-target {
         margin-bottom: 12px;
         padding-bottom: 11px;
         border-bottom: 1px solid #dfdfdf;
     }
 
-    #annotations .actions {
+    #generations .actions {
         float: right;
     }
-    #annotations .actions li {
+    #generations .actions li {
         list-style-type: none;
     }
-    #annotations .o-icon-annotation::before {
-        content: "";
+    #generations .o-icon-generation::before {
+        content: "";
     }
-    #annotations .o-icon-item-set::before {
+    #generations .o-icon-item-set::before {
         content: "";
     }
-    #annotations .o-icon-item::before {
+    #generations .o-icon-item::before {
         content: "";
     }
-    #annotations .o-icon-media::before {
+    #generations .o-icon-media::before {
         content: "";
     }
 
@@ -125,36 +125,36 @@
         padding-right: initial;
         border-right: none;
     }
-    caption.annotation-body span.oa-motivated-by {
+    caption.generation-body span.oa-motivated-by {
         font-style: italic;
         font-weight: normal;
     }
 
-    .annotation .single-action {
+    .generation .single-action {
         margin-top: -6px;
         float: right;
         opacity: .5;
     }
-    .annotation .single-action:hover {
+    .generation .single-action:hover {
         opacity: 1;
     }
 
-    .show .annotations table th:first-of-type,
-    .show .annotations table td:first-of-type {
+    .show .generations table th:first-of-type,
+    .show .generations table td:first-of-type {
         min-width: 75%;
         width: 75%;
     }
-    .show .annotations table th:last-of-type,
-    .show .annotations table td:last-of-type {
+    .show .generations table th:last-of-type,
+    .show .generations table td:last-of-type {
         max-width: 25%;
         width: 25%;
     }
 
-    .annotate .property {
+    .generateur .property {
         display: initial;
     }
 
-    #annotate form label[for=submit] {
+    #generateur form label[for=submit] {
         display: none;
     }
 }
