@@ -1,0 +1,26 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\AbstractResourceRepresentation $resource
+ * @var \Generateur\Form\GenerateurForm $generateurForm
+ */
+
+$translate = $this->plugin('translate');
+
+// $generationForm->prepare();
+$resourceClass = $resource->resourceClass();
+$isGeneration = $resourceClass && $resourceClass->localName() === 'Generation';
+// if ($isGeneration):
+//     $generationResource = $this->generationTargetResource($resource);
+// endif;
+?>
+<div class="property">
+    <h4><?php echo $translate('New generation'); ?></h4>
+    <?php if ($isGeneration): ?>
+    <p>
+    <?php echo $translate('Warning: the resource is already an generation.'); ?>
+    <?php echo $translate('Go to the tab "Metadata" to find and to generateur the original target resource.'); ?>
+    </p>
+    <?php endif; ?>
+    <?php echo $this->form($generateurForm); ?>
+</div>

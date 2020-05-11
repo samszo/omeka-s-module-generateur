@@ -1,0 +1,287 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation[] $generations
+ */
+
+// TODO Use paginator like linked resources.
+
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$hyperlink = $this->plugin('hyperlink');
+
+$this->headLink()
+    ->appendStylesheet($this->assetUrl('vendor/webui-popover/jquery.webui-popover.min.css', 'Generateur'))
+    ->appendStylesheet($this->assetUrl('css/generateur-admin.css', 'Generateur'));
+$this->headScript()
+    ->appendFile($this->assetUrl('vendor/webui-popover/jquery.webui-popover.min.js', 'Generateur'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($this->assetUrl('js/generateur-admin.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
+?>
+
+<div id="generations" class="generations">
+<?php if (empty($generations)): ?>
+    <div class="no-resources">
+        <p><?php echo $translate('There are no generations for this resource.'); ?></p>
+    </div>
+<?php else: ?>
+    <?php foreach ($generations as $generation): ?>
+    <?php // A table can have one thead only, but there need to distinct bodies and targets, so there may be three tables instead of nested tables. ?>
+<div class="generation">
+
+<table>
+<caption class="generation-caption">
+    <?php echo $generation->linkPretty(); ?>
+    <span class="generation-created"><?php echo $generation->created()->format('Y-m-d H:i:s'); ?></span>
+    <span class="generation-owner"><?php echo $generation->owner()->name(); ?></span>
+    <?php if (!$generation->isPublic()): ?>
+    <span class="o-icon-private" aria-label="Private"></span>
+    <?php endif; ?>
+    <?php $motivatedByValues = $generation->value('oa:motivatedBy', ['all' => true, 'default' => []]); ?>
+    <?php foreach ($motivatedByValues as $value): ?>
+    <span class="oa-motivated-by">
+        <?php echo $escape($value); ?>
+    </span>
+    <?php endforeach; ?>
+    <ul class="actions">
+        <li>
+            <span>
+            <?php echo $generation->link('', 'show', ['class' => 'o-icon-generation', 'title' => $translate('Show generation')]); ?>
+            </span>
+        </li>
+        <?php if ($generation->userIsAllowed('update')): ?>
+        <li>
+            <span>
+            <?php echo $generation->link('', 'edit', ['class' => 'o-icon-edit', 'title' => $translate('Edit generation')]); ?>
+            </span>
+        </li>
+        <?php endif; ?>
+        <?php if ($generation->userIsAllowed('delete')): ?>
+        <li>
+            <?php
+            $redirect = $this->serverUrl(true) . '#generateur';
+            echo $hyperlink('', '#', [
+                'data-sidebar-selector' => '#sidebar',
+                'data-sidebar-content-url' => $generation->url('delete-confirm') . '?' . http_build_query(['redirect' => $redirect]),
+                'class' => 'o-icon-delete sidebar-content',
+                'title' => $translate('Delete generation'),
+            ]); ?>
+        </li>
+        <?php endif; ?>
+    </ul>
+</caption>
+</table>
+
+<?php
+// Manage full bodies. If there are embedded body values, there must not be a
+// body [w3c av 2.2.2].
+/** @var \Omeka\Api\Representation\GenerationBodyRepresentation[] $generationBodies */
+$generationBodies = $generation->bodies();
+?>
+<?php if (count($generationBodies)): ?>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
+<thead>
+    <tr>
+        <th><?php echo $translate('Value'); ?></th>
+        <th><?php echo $translate('Purpose'); ?></th>
+    </tr>
+</thead>
+<tbody>
+    <?php
+    // Manage embedded textual body values (when the generation and the body are
+    // not separated). Implies a string value only [w3c av 2.2.2], and the same
+    // purposes, if any.
+    /** @var \Omeka\Api\Representation\ValueRepresentation[] $bodyValues */
+    $bodyValues = $generation->value('oa:bodyValue', ['type' => 'literal', 'all' => true, 'default' => []]);
+    $hasPurposeValues = $generation->value('oa:hasPurpose', ['all' => true, 'default' => []]);
+    $hasPurposeHtml = '';
+    foreach ($hasPurposeValues as $value):
+        $hasPurposeHtml .= '<span class="oa-has-purpose">' . $escape($value) . '</span>';
+    endforeach;
+    ?>
+    <?php foreach ($bodyValues as $bodyValue): ?>
+    <tr class="generation-body">
+        <td>
+            <?php echo $bodyValue->asHtml(); ?>
+        </td>
+        <td>
+            <?php echo $hasPurposeHtml; ?>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+
+    <?php foreach ($generationBodies as $generationBody): ?>
+    <tr class="generation-body">
+        <td class="webui-popover-parent">
+            <?php // There must be one value in a Textual Body [w3c am 3.2.4]. ?>
+            <?php $values = $generationBody->value('rdf:value', ['all' => true, 'default' => []]); ?>
+            <?php foreach ($values as $value): ?>
+            <div class="rdf-value">
+                <?php if ($value && $value->type() === 'resource'): ?>
+                    <?php $isLong = false; ?>
+                    <?php echo $value->valueResource()->linkPretty(); ?>
+                <?php else: ?>
+                    <?php $text = $value; ?>
+                    <?php $isLong = mb_strlen($text) > 240; ?>
+                    <?php if ($isLong): ?>
+                        <div class="generation-body-truncated truncate"><?php echo nl2br($escape(substr($text, 0, 240))) . '…'; ?></div>
+                    <?php else: ?>
+                        <?php echo nl2br($escape($text)); ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+            <ul class="actions">
+                <?php if ($isLong): ?>
+                <li><?php echo $hyperlink('', '#', [
+                    'class' => 'o-icon- fa fa-expand popover',
+                    'title' => $translate('Full value'),
+                ]); ?>
+                    <div class="generation-body-full webui-popover-content webui-popover-current"><?php echo nl2br($escape($text)); ?></div>
+                </li>
+                <?php endif; ?>
+            </ul>
+            <?php endforeach;?>
+        </td>
+        <td>
+            <?php $values = $generationBody->value('oa:hasPurpose', ['all' => true, 'default' => []]); ?>
+            <?php foreach ($values as $value): ?>
+            <span class="oa-has-purpose">
+                <?php echo $escape($value); ?>
+            </span>
+            <?php endforeach; ?>
+            <?php /*
+            <ul class="actions">
+                <li>
+                    <span>
+                    <?php echo $generationBody->link('', 'show', ['class' => 'o-icon-generation', 'title' => $translate('Show generation body')]); ?>
+                    </span>
+                </li>
+                <?php if ($generation->userIsAllowed('update')): ?>
+                <li>
+                    <span>
+                    <?php echo $generationBody->link('', 'edit', ['class' => 'o-icon-edit', 'title' => $translate('Edit generation body')]); ?>
+                    </span>
+                </li>
+                <?php endif; ?>
+                <?php // TODO Confirm delete generation from item show. ?>
+                <?php /*
+                <?php if ($generation->userIsAllowed('delete')): ?>
+                <li>
+                    <span class="single-action">
+                    <?php echo $generationBody->link('', 'confirm-delete', ['class' => 'o-icon-delete', 'title' => $translate('Delete generation body')]); ?>
+                    </span>
+                </li>
+                <?php endif; ?>
+            </ul>
+            */ ?>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+</tbody>
+</table>
+<?php endif; ?>
+
+<?php
+/** @var \Omeka\Api\Representation\GenerationTargetRepresentation[] $generationTargets */
+$generationTargets = $generation->targets();
+// Check if there are data to display too (there is at least one target, but may be just the source).
+$hasTargetData = false;
+foreach ($generationTargets as $generationTarget) {
+    if ($generationTarget->value('rdf:value', ['all' => false, 'default' => '']) || $generationTarget->value('rdf:type', ['all' => true, 'default' => []])) {
+        $hasTargetData = true;
+        break;
+    }
+}
+
+?>
+<?php if ($hasTargetData): ?>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
+<thead>
+    <tr>
+        <th><?php echo $translate('Target selector'); ?></th>
+        <th><?php echo $translate('Selector type'); ?></th>
+    </tr>
+</thead>
+<tbody>
+    <?php foreach ($generationTargets as $generationTarget): ?>
+    <tr class="generation-target">
+        <td class="webui-popover-parent">
+            <?php $values = $generationTarget->value('rdf:value', ['all' => true, 'default' => []]); ?>
+            <?php foreach ($values as $value): ?>
+            <div class="rdf-value">
+                <?php if ($value && $value->type() === 'resource'): ?>
+                    <?php $isLong = false; ?>
+                    <?php echo $value->valueResource()->linkPretty(); ?>
+                <?php else: ?>
+                    <?php $text = $value; ?>
+                    <?php $isLong = mb_strlen($text) > 240; ?>
+                    <?php if ($isLong): ?>
+                        <div class="generation-target-truncated truncate"><?php echo nl2br($escape(substr($text, 0, 240))) . '…'; ?></div>
+                    <?php else: ?>
+                        <?php echo nl2br($escape($text)); ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+            <ul class="actions">
+                <?php if ($isLong): ?>
+                <li><?php echo $hyperlink('', '#', [
+                    'class' => 'o-icon- fa fa-expand popover',
+                    'title' => $translate('Full value'),
+                ]); ?>
+                    <div class="generation-body-full webui-popover-content webui-popover-current"><?php echo nl2br($escape($text)); ?></div>
+                </li>
+                <?php endif; ?>
+            </ul>
+            <?php endforeach; ?>
+        </td>
+        <td>
+            <?php $values = $generationTarget->value('rdf:type', ['all' => true, 'default' => []]); ?>
+            <?php foreach ($values as $value): ?>
+            <span class="rdf-type">
+                <?php echo $escape($value); ?>
+            </span>
+            <?php endforeach; ?>
+            <?php /*
+            <ul class="actions">
+                <li>
+                    <span>
+                    <?php echo $generationTarget->link('', 'show', ['class' => 'o-icon-generation', 'title' => $translate('Show generation target')]); ?>
+                    </span>
+                </li>
+                <?php if ($generation->userIsAllowed('update')): ?>
+                <li>
+                    <span>
+                        <?php echo $generationTarget->link('', 'edit', ['class' => 'o-icon-edit', 'title' => $translate('Edit generation target')]); ?>
+                    </span>
+                </li>
+                <?php endif; ?>
+                <?php // TODO Confirm delete generation from item show. ?>
+                <?php /*
+                <?php if ($generation->userIsAllowed('delete')): ?>
+                <li>
+                    <span class="single-action">
+                    <?php echo $generationTarget->link('', 'confirm-delete', ['class' => 'o-icon-delete', 'title' => $translate('Delete generation target')]); ?>
+                    </span>
+                </li>
+                <?php endif; ?>
+            </ul>
+            */ ?>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+</tbody>
+</table>
+<?php endif; ?>
+
+</div>
+<?php endforeach; ?>
+
+<?php endif; ?>
+</div>
+
+<div id="sidebar" class="sidebar">
+    <?php echo $hyperlink('', '#', [
+        'class' => 'sidebar-close o-icon-close',
+        'title' => $translate('Close'),
+    ]); ?>
+    <div class="sidebar-content"></div>
+</div>

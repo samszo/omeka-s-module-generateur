@@ -1,0 +1,39 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation $generation
+ * @var \Omeka\Form\ResourceForm $form
+ */
+
+$translate = $this->plugin('translate');
+$this->htmlElement('body')->appendAttribute('class', 'generations edit');
+$deleteButton = $generation->userIsAllowed('delete')
+    ? '<a href="#" class="delete button">' . $translate('Delete') . '</a>'
+    : null;
+?>
+
+<script type='text/javascript'>
+<?php
+// Most of the time, there will be one body and one target only, with specific
+// properties, so the values are merged.
+// TODO Improve the form for complex and multiple targets.
+?>
+var valuesJson = <?php echo json_encode($generation->mergedValues()); ?>;
+</script>
+
+<?php echo $this->pageTitle($generation->displayTitle(), 1, $translate('Generations'), $translate('Edit')); ?>
+<?php $this->trigger('view.edit.before'); ?>
+<?php
+echo $this->partial('generateur/admin/generation/form.phtml', [
+    'form' => $form,
+    'generation' => $generation,
+    'submitLabel' => $translate('Save'),
+    'deleteButton' => $deleteButton,
+    'sectionNavEvent' => 'view.edit.section_nav',
+    'action' => 'edit',
+]);
+?>
+
+<?php echo $this->deleteConfirm($generation, 'generation'); ?>
+
+<?php $this->trigger('view.edit.after'); ?>

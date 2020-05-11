@@ -1,0 +1,111 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SiteRepresentation $site
+ * @var \Generateur\Api\Representation\GenerationRepresentation[] $resources
+ * @var \Generateur\Api\Representation\GenerationRepresentation[] $generations
+ */
+
+$translate = $this->plugin('translate');
+$assetUrl = $this->plugin('assetUrl');
+
+$this->headLink()
+    ->appendStylesheet($assetUrl('vendor/tablesaw/tablesaw.stackonly.css', 'Omeka'))
+    ->appendStylesheet($assetUrl('vendor/webui-popover/jquery.webui-popover.min.css', 'Generateur'))
+    ->appendStylesheet($assetUrl('css/generateur.css', 'Generateur'));
+$this->headScript()
+    ->appendFile($assetUrl('vendor/tablesaw/tablesaw.stackonly.jquery.js', 'Omeka'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($assetUrl('vendor/webui-popover/jquery.webui-popover.min.js', 'Generateur'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($assetUrl('js/generateur.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
+
+$this->htmlElement('body')->appendAttribute('class', 'generations browse');
+
+$sortHeadings = [
+    [
+        'label' => $translate('Annotator'),
+        'value' => 'name',
+    ],
+    [
+        'label' => $translate('Annotator email'),
+        'value' => 'email',
+    ],
+    [
+        'label' => $translate('Resource'),
+        'value' => 'resource_id',
+    ],
+    [
+        'label' => $translate('Date generateurd'),
+        'value' => 'created',
+    ],
+];
+?>
+
+<?php echo $this->pageTitle('', 1, $translate('Generations')); ?>
+
+<?php echo $this->searchFilters(); ?>
+
+ <div class="browse-controls">
+    <?php echo $this->pagination(); ?>
+    <?php // echo $this->hyperlink($translate('Advanced search'), $this->url(null, ['action' => 'search'], ['query' => $this->params()->fromQuery()], true), ['class' => 'advanced-search']); ?>
+    <?php echo $this->sortSelector($sortHeadings); ?>
+</div>
+
+<?php $this->trigger('view.browse.before'); ?>
+<?php if ($generations): ?>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
+    <thead>
+        <tr>
+            <th>
+                <?php echo $translate('Generation'); ?>
+            </th>
+            <th><?php echo $translate('Targets'); ?></th>
+            <th><?php echo $translate('Annotator'); ?></th>
+            <th><?php echo $translate('Date generateurd'); ?></th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($generations as $generation): ?>
+        <?php
+        $resources = $generation->targetSources();
+        $owner = $generation->owner();
+        ?>
+        <tr class="generation">
+            <td>
+                <?php echo $generation->linkPretty(); ?>
+            </td>
+            <td>
+                <?php if ($resources): ?>
+                    <?php foreach ($resources as $resource): ?>
+                    <?php echo $resource->linkPretty(); ?>
+                    <span class="resource-name <?php echo $resource->getControllerName(); ?>" aria-label="<?php echo $translate($resource->getControllerName()); ?>"></span>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    [<?php echo $translate('Removed'); ?>]
+                <span class="resource-name no-resource"></span>
+                <?php endif; ?>
+            </td>
+            <td>
+                <span class="<?php if ($owner): ?>generation-user<?php else: ?>generation-public<?php endif; ?>"><?php
+                    echo $generation->linkAnnotator();
+                ?></span>
+            </td>
+            <td><?php echo $generation->created()->format('Y-m-d H:i:s'); ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+
+</form>
+
+<?php $this->trigger('view.browse.after'); ?>
+<div class="browse-controls">
+    <?php echo $this->pagination(); ?>
+</div>
+
+<?php else: ?>
+
+<div class="no-resources">
+    <p><?php echo $translate('Your query returned no generations.'); ?></p>
+</div>
+
+<?php endif; ?>
