@@ -22,12 +22,8 @@ $this->htmlElement('body')->appendAttribute('class', 'generations browse');
 
 $sortHeadings = [
     [
-        'label' => $translate('Annotator'),
+        'label' => $translate('Owner'),
         'value' => 'name',
-    ],
-    [
-        'label' => $translate('Annotator email'),
-        'value' => 'email',
     ],
     [
         'label' => $translate('Resource'),
@@ -40,14 +36,14 @@ $sortHeadings = [
 ];
 ?>
 
-<?php echo $this->pageTitle('', 1, $translate('Generations')); ?>
+<?= $this->pageTitle('', 1, $translate('Generations')) ?>
 
-<?php echo $this->searchFilters(); ?>
+<?= $this->searchFilters() ?>
 
  <div class="browse-controls">
-    <?php echo $this->pagination(); ?>
+    <?= $this->pagination() ?>
     <?php // echo $this->hyperlink($translate('Advanced search'), $this->url(null, ['action' => 'search'], ['query' => $this->params()->fromQuery()], true), ['class' => 'advanced-search']); ?>
-    <?php echo $this->sortSelector($sortHeadings); ?>
+    <?= $this->sortSelector($sortHeadings) ?>
 </div>
 
 <?php $this->trigger('view.browse.before'); ?>
@@ -56,56 +52,45 @@ $sortHeadings = [
     <thead>
         <tr>
             <th>
-                <?php echo $translate('Generation'); ?>
+                <?= $translate('Generation') ?>
             </th>
-            <th><?php echo $translate('Targets'); ?></th>
-            <th><?php echo $translate('Annotator'); ?></th>
-            <th><?php echo $translate('Date generated'); ?></th>
+            <th><?= $translate('Owner') ?></th>
+            <th><?= $translate('Date generated') ?></th>
         </tr>
     </thead>
     <tbody>
         <?php foreach ($generations as $generation): ?>
         <?php
-        $resources = $generation->targetSources();
         $owner = $generation->owner();
         ?>
         <tr class="generation">
             <td>
-                <?php echo $generation->linkPretty(); ?>
+                <?= $generation->linkPretty() ?>
             </td>
             <td>
-                <?php if ($resources): ?>
-                    <?php foreach ($resources as $resource): ?>
-                    <?php echo $resource->linkPretty(); ?>
-                    <span class="resource-name <?php echo $resource->getControllerName(); ?>" aria-label="<?php echo $translate($resource->getControllerName()); ?>"></span>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    [<?php echo $translate('Removed'); ?>]
-                <span class="resource-name no-resource"></span>
-                <?php endif; ?>
+                <?= $generation->resource()->linkPretty() ?>
+                <span class="resource-name <?= $generation->resource()->getControllerName() ?>" aria-label="<?= $translate($generation->resource()->getControllerName()) ?>"></span>
             </td>
             <td>
                 <span class="<?php if ($owner): ?>generation-user<?php else: ?>generation-public<?php endif; ?>"><?php
-                    echo $generation->linkAnnotator();
+                    echo $generation->owner() ? $generation->owner()->name() : $translate('[removed]');
                 ?></span>
             </td>
-            <td><?php echo $generation->created()->format('Y-m-d H:i:s'); ?></td>
+            <td><?= $generation->created()->format('Y-m-d H:i:s') ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
 
-</form>
-
 <?php $this->trigger('view.browse.after'); ?>
 <div class="browse-controls">
-    <?php echo $this->pagination(); ?>
+    <?= $this->pagination() ?>
 </div>
 
 <?php else: ?>
 
 <div class="no-resources">
-    <p><?php echo $translate('Your query returned no generations.'); ?></p>
+    <p><?= $translate('Your query returned no generations.') ?></p>
 </div>
 
 <?php endif; ?>

@@ -86,7 +86,7 @@ class GenerationController extends AbstractActionController
         return $view;
     }
 
-    // TODO Make possible to add an generation directly (not only ajax or specialized generation)?
+    // TODO Make possible to add a generation directly (not only ajax or specialized generation)?
 
     /**
      * Generateur a resource.

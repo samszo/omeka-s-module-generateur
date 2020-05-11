@@ -9,8 +9,6 @@ class TotalResourceGenerations extends AbstractPlugin
     /**
      * Helper to return the total of generations of a resource, without limit.
      *
-     * @todo Manage properties of targets and bodies.
-     *
      * @param AbstractResourceEntityRepresentation $resource
      * @param array $query
      * @return int

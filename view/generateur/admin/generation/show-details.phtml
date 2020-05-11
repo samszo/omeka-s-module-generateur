@@ -9,63 +9,38 @@ $escape = $this->plugin('escapeHtml');
 $hyperlink = $this->plugin('hyperlink');
 $generation = $resource;
 ?>
+
 <div class="resource-details" data-resource-values="<?php //echo $escape($values); ?>">
-    <h3 class="o-module-generation"><?php echo $generation->linkPretty(); ?></h3>
+    <h3 class="o-module-generation"><?= $generation->linkPretty() ?></h3>
     <div class="meta-group">
         <?php $owner = $generation->owner(); ?>
-        <h4><?php echo $escape($translate('Annotator')); ?> <?php if (!$owner): ?><span class="generation-public"><?php echo $translate('(public)'); ?></span><?php endif; ?></h4>
+        <h4><?= $escape($translate('Owner')) ?> <?php if (!$owner): ?><span class="generation-public"><?= $translate('(public)') ?></span><?php endif; ?></h4>
         <div class="value">
             <?php if ($owner): ?>
-            <span class="generation-email"><?php echo $hyperlink(
+            <span class="generation-email"><?= $hyperlink(
                 $owner->email(),
-                $this->url('admin/id', ['controller' => 'user', 'action' => 'show', 'id' => $owner->id()])
+                $owner->url()
             ); ?></span>
-            <span class="generation-name"><?php echo $owner->name(); ?></span>
+            <span class="generation-name"><?= $owner->name() ?></span>
             <?php else: ?>
-            <span class="generation-email generation-public"><?php echo $hyperlink($generation->email(), 'mailto:' . $generation->email()); ?></span>
-            <span class="generation-name"><?php echo $generation->name(); ?></span>
+            <span class="generation-email generation-public"><?= $hyperlink($generation->email(), 'mailto:' . $generation->email()) ?></span>
+            <span class="generation-name"><?= $generation->name() ?></span>
             <?php endif; ?>
         </div>
     </div>
 
-    <?php echo $this->thumbnail($generation, 'square'); ?>
+    <?= $this->thumbnail($generation, 'square') ?>
     <div class="meta-group">
-        <h4><?php echo $translate('Visibility'); ?></h4>
-        <div class="value"><?php echo ($generation->isPublic()) ? $escape($translate('Public')) : $escape($translate('Private')); ?></div>
+        <h4><?= $translate('Visibility') ?></h4>
+        <div class="value"><?= ($generation->isPublic()) ? $escape($translate('Public')) : $escape($translate('Private')) ?></div>
     </div>
     <div class="meta-group">
-        <h4><?php echo $translate('Created'); ?></h4>
-        <div class="value"><?php echo $escape($generation->created()->format('Y-m-d H:i:s')); ?></div>
+        <h4><?= $translate('Created') ?></h4>
+        <div class="value"><?= $escape($generation->created()->format('Y-m-d H:i:s')) ?></div>
     </div>
     <div class="meta-group">
-        <h4><?php echo $translate('Owner'); ?></h4>
-        <div class="value"><?php echo $owner ? $escape($owner->name()) : $translate('[no owner]'); ?></div>
-    </div>
-
-    <?php $bodies = $generation->bodies(); ?>
-    <div class="meta-group">
-        <h4><?php echo $translate('Bodies'); ?></h4>
-        <?php if (count($bodies)): ?>
-            <?php foreach ($bodies as $body): ?>
-            <div class="value generation-body"><?php echo $body->displayTitle(); ?></div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p class="no-resources"><?php echo $translate('This generation has no bodies.'); ?></p>
-        <?php endif; ?>
-    </div>
-
-    <?php $targets = $generation->targets(); ?>
-    <div class="meta-group">
-        <h4><?php echo $translate('Targets'); ?></h4>
-        <?php if (count($targets)): ?>
-        <?php foreach ($targets as $target): ?>
-        <div class="value">
-            <?php echo $target->displayTitle(); ?>
-        </div>
-        <?php endforeach; ?>
-        <?php else: ?>
-        <p class="no-resources"><?php echo $translate('This generation has no targets.'); ?></p>
-        <?php endif; ?>
+        <h4><?= $translate('Owner') ?></h4>
+        <div class="value"><?= $owner ? $escape($owner->name()) : $translate('[removed]') ?></div>
     </div>
 
     <?php $this->trigger('view.details', array('entity' => $resource)); ?>

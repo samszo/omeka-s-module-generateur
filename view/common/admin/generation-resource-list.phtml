@@ -21,18 +21,17 @@ $this->headScript()
 <div id="generations" class="generations">
 <?php if (empty($generations)): ?>
     <div class="no-resources">
-        <p><?php echo $translate('There are no generations for this resource.'); ?></p>
+        <p><?= $translate('There are no generations for this resource.') ?></p>
     </div>
 <?php else: ?>
     <?php foreach ($generations as $generation): ?>
-    <?php // A table can have one thead only, but there need to distinct bodies and targets, so there may be three tables instead of nested tables. ?>
 <div class="generation">
 
 <table>
 <caption class="generation-caption">
-    <?php echo $generation->linkPretty(); ?>
-    <span class="generation-created"><?php echo $generation->created()->format('Y-m-d H:i:s'); ?></span>
-    <span class="generation-owner"><?php echo $generation->owner()->name(); ?></span>
+    <?= $generation->linkPretty() ?>
+    <span class="generation-created"><?= $generation->created()->format('Y-m-d H:i:s') ?></span>
+    <span class="generation-owner"><?= $generation->owner() ? $generation->owner()->link($generation->owner()->name()) : $translate('[removed]') ?></span>
     <?php if (!$generation->isPublic()): ?>
     <span class="o-icon-private" aria-label="Private"></span>
     <?php endif; ?>
@@ -40,13 +39,13 @@ $this->headScript()
     <ul class="actions">
         <li>
             <span>
-            <?php echo $generation->link('', 'show', ['class' => 'o-icon-generation', 'title' => $translate('Show generation')]); ?>
+            <?= $generation->link('', 'show', ['class' => 'o-icon-generation', 'title' => $translate('Show generation')]) ?>
             </span>
         </li>
         <?php if ($generation->userIsAllowed('update')): ?>
         <li>
             <span>
-            <?php echo $generation->link('', 'edit', ['class' => 'o-icon-edit', 'title' => $translate('Edit generation')]); ?>
+            <?= $generation->link('', 'edit', ['class' => 'o-icon-edit', 'title' => $translate('Edit generation')]) ?>
             </span>
         </li>
         <?php endif; ?>
@@ -73,7 +72,7 @@ $this->headScript()
 </div>
 
 <div id="sidebar" class="sidebar">
-    <?php echo $hyperlink('', '#', [
+    <?= $hyperlink('', '#', [
         'class' => 'sidebar-close o-icon-close',
         'title' => $translate('Close'),
     ]); ?>

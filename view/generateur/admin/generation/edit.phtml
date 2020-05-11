@@ -2,6 +2,7 @@
 /**
  * @var \Zend\View\Renderer\PhpRenderer $this
  * @var \Generateur\Api\Representation\GenerationRepresentation $generation
+ * @var \Generateur\Api\Representation\GenerationRepresentation $resource
  * @var \Omeka\Form\ResourceForm $form
  */
 
@@ -12,16 +13,7 @@ $deleteButton = $generation->userIsAllowed('delete')
     : null;
 ?>
 
-<script type='text/javascript'>
-<?php
-// Most of the time, there will be one body and one target only, with specific
-// properties, so the values are merged.
-// TODO Improve the form for complex and multiple targets.
-?>
-var valuesJson = <?php echo json_encode($generation->mergedValues()); ?>;
-</script>
-
-<?php echo $this->pageTitle($generation->displayTitle(), 1, $translate('Generations'), $translate('Edit')); ?>
+<?= $this->pageTitle($generation->displayTitle(), 1, $translate('Generations'), $translate('Edit')) ?>
 <?php $this->trigger('view.edit.before'); ?>
 <?php
 echo $this->partial('generateur/admin/generation/form.phtml', [
@@ -34,6 +26,6 @@ echo $this->partial('generateur/admin/generation/form.phtml', [
 ]);
 ?>
 
-<?php echo $this->deleteConfirm($generation, 'generation'); ?>
+<?= $this->deleteConfirm($generation, 'generation') ?>
 
 <?php $this->trigger('view.edit.after'); ?>

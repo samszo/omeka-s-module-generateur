@@ -21,21 +21,20 @@ $this->headScript()
 ?>
 
 <div id="generations" class="generations">
-<h3><?php echo $translate('Generations'); ?></h3>
+<h3><?= $translate('Generations') ?></h3>
 <?php if (empty($generations)): ?>
     <div class="no-resources">
-        <p><?php echo $translate('There are no generations for this resource.'); ?></p>
+        <p><?= $translate('There are no generations for this resource.') ?></p>
     </div>
 <?php else: ?>
     <?php foreach ($generations as $generation): ?>
-    <?php // A table can have one thead only, but there need to distinct bodies and targets, so there may be three tables instead of nested tables. ?>
 <div class="generation">
 
 <table>
 <caption class="generation-caption">
-    <?php echo sprintf($translate('[Generation #%d]'), $generation->id()); ?>
-    <span class="generation-created"><?php echo $generation->created()->format('Y-m-d H:i:s'); ?></span>
-    <span class="generation-owner"><?php echo $generation->owner()->name(); ?></span>
+    <?= sprintf($translate('[Generation #%d]'), $generation->id()) ?>
+    <span class="generation-created"><?= $generation->created()->format('Y-m-d H:i:s') ?></span>
+    <span class="generation-owner"><?= $generation->owner() ? $generation->owner()->name() : $translate('[removed]') ?></span>
 </caption>
 </table>
 

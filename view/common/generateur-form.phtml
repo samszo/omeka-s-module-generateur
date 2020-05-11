@@ -9,17 +9,15 @@ $translate = $this->plugin('translate');
 
 $generateurForm->prepare();
 $isGeneration = false;
-// if ($isGeneration):
-//     $generationResource = $this->generationTargetResource($resource);
-// endif;
 ?>
+
 <div class="property">
-    <h4><?php echo $translate('New generation'); ?></h4>
+    <h4><?= $translate('New generation') ?></h4>
     <?php if ($isGeneration): ?>
     <p>
-    <?php echo $translate('Warning: the resource is already an generation.'); ?>
-    <?php echo $translate('Go to the tab "Metadata" to find and to generateur the original target resource.'); ?>
+    <?= $translate('Warning: the resource is already a generation.') ?>
+    <?= $translate('Go to the tab "Metadata" to find and to generate the original resource.') ?>
     </p>
     <?php endif; ?>
-    <?php echo $this->form($generateurForm); ?>
+    <?= $this->form($generateurForm) ?>
 </div>

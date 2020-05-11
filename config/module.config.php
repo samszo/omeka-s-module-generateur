@@ -181,9 +181,9 @@ return [
         ],
     ],
     'js_translate_strings' => [
-        'Search generations', // @target
-        'Generations', // @target
-        'Generation', // @target
+        'Search generations', // @translate
+        'Generations', // @translate
+        'Generation', // @translate
     ],
     'blocksdisposition' => [
         'views' => [
