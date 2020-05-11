@@ -1,21 +1,21 @@
-# SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
+# Daniel Berthereau <Daniel.github@Berthereau.net>, 2020.
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-05-11 00:00+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2020-05-11 00:00+0000\n"
+"Last-Translator: Daniel Berthereau <Daniel.github@Berthereau.net>\n"
+"Language-Team: French <kde-i18n-doc@kde.org>\n"
+"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 19.12.0\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: Module.php:70
 #, php-format
@@ -24,7 +24,7 @@ msgstr ""
 
 #: Module.php:111
 msgid "WARNING"
-msgstr ""
+msgstr "ATTENTION"
 
 #: Module.php:116
 msgid "All the generations will be removed."
@@ -45,12 +45,12 @@ msgstr ""
 #: Module.php:537 Module.php:544
 #: view/common/advanced-search/date-time-generation.phtml:77
 msgid "after"
-msgstr ""
+msgstr "après"
 
 #: Module.php:538 Module.php:543
 #: view/common/advanced-search/date-time-generation.phtml:78
 msgid "after or on"
-msgstr ""
+msgstr "après ou le"
 
 #: Module.php:539 Module.php:545
 #: view/common/advanced-search/date-time-generation.phtml:79
@@ -65,12 +65,12 @@ msgstr ""
 #: Module.php:541 Module.php:547
 #: view/common/advanced-search/date-time-generation.phtml:81
 msgid "before or on"
-msgstr ""
+msgstr "avant ou le"
 
 #: Module.php:542 Module.php:548
 #: view/common/advanced-search/date-time-generation.phtml:82
 msgid "before"
-msgstr ""
+msgstr "avant"
 
 #: Module.php:549 view/common/advanced-search/date-time-generation.phtml:83
 msgid "has any date / time"
@@ -82,7 +82,7 @@ msgstr ""
 
 #: Module.php:560
 msgid "Modified"
-msgstr ""
+msgstr "Modifié"
 
 #: src/Api/Representation/GenerationRepresentation.php:82
 #: view/common/site/generation-resource.phtml:35
@@ -93,12 +93,12 @@ msgstr ""
 #: src/Generic/AbstractModule.php:598
 #, php-format
 msgid "This module requires the module \"%s\"."
-msgstr ""
+msgstr "Ce module requiert le module \"%s\"."
 
 #: src/Generic/AbstractModule.php:618
 #, php-format
 msgid "This module requires modules \"%s\"."
-msgstr ""
+msgstr "Ce module requiert les modules \"%s\"."
 
 #: src/Generic/AbstractModule.php:686
 #, php-format
@@ -106,6 +106,8 @@ msgid ""
 "The module \"%s\" was automatically deactivated because the dependencies are "
 "unavailable."
 msgstr ""
+"Le module %s\" a été automatiquement désactivé car ses dépendances ne sont"
+" plus disponibles."
 
 #: view/common/admin/generation-resource-list.phtml:24
 #: view/common/site/generation-resource.phtml:27
@@ -119,7 +121,7 @@ msgstr ""
 #: view/generateur/admin/generation/show.phtml:47
 #: view/generateur/site/generation/browse.phtml:76
 msgid "[removed]"
-msgstr ""
+msgstr "[supprimé]"
 
 #: view/common/admin/generation-resource-list.phtml:42
 msgid "Show generation"
@@ -291,11 +293,11 @@ msgstr ""
 
 #: view/generateur/admin/generation/show-details.phtml:17
 msgid "(public)"
-msgstr ""
+msgstr "(public)"
 
 #: src/Form/GenerateurForm.php:39
 msgid "Is public"
-msgstr ""
+msgstr "Est public"
 
 #: src/Form/GenerateurForm.php:50
 msgid "Generate!"
@@ -303,7 +305,7 @@ msgstr ""
 
 #: src/Form/QuickSearchForm.php:31
 msgid "Set a date with optional comparator…"
-msgstr ""
+msgstr "Indiquer une date avec un signe éventuel de comparaison…"
 
 #: src/Mapping/GenerationMapping.php:9
 msgid "Generation data"
@@ -326,17 +328,17 @@ msgstr ""
 #: src/Controller/Admin/GenerationController.php:110
 #: src/Controller/Admin/GenerationController.php:112
 msgid "Unauthorized access."
-msgstr ""
+msgstr "Accès interdit."
 
 #: src/Controller/Admin/GenerationController.php:123
 #: src/Controller/Admin/GenerationController.php:125
 #: src/Controller/Admin/GenerationController.php:135
 msgid "Resource not found."
-msgstr ""
+msgstr "Ressource non trouvée."
 
 #: src/Controller/Admin/GenerationController.php:137
 msgid "Resource not found"
-msgstr ""
+msgstr "Ressource non trouvée"
 
 #: src/Controller/Admin/GenerationController.php:158
 msgid "Resource template \"Génération\" not found."
@@ -383,6 +385,8 @@ msgstr ""
 #, php-format
 msgid "The file \"%s\" cannot be read. Check your file system."
 msgstr ""
+"Le fichier \"%s\" ne peut pas être lu. Merci de vérifier le système de"
+" fichiers."
 
 #: src/Generic/InstallResources.php:189
 #, php-format
@@ -390,6 +394,8 @@ msgid ""
 "An error occured when adding the prefix \"%s\": another vocabulary exists. "
 "Resolve the conflict before installing this module."
 msgstr ""
+"Une erreur est survenue en ajoutant le préfixe \"%s\" : un autre vocabulaire"
+" existe. Merci de résoudre le conflit avant d'installer ce module."
 
 #: src/Generic/InstallResources.php:219
 #, php-format
@@ -397,10 +403,12 @@ msgid ""
 "A resource template named \"%s\" exists: rename it or remove it before "
 "installing this module."
 msgstr ""
+"Un modèle de ressource nommé \"%s\" existe : merci de le renommer ou de le"
+" supprimer avant d'installer ce module."
 
 #: src/Generic/InstallResources.php:247
 msgid "The current version of this module requires the module Custom Vocab."
-msgstr ""
+msgstr "Cette version du module requiert le module Custom Vocab."
 
 #: src/Generic/InstallResources.php:254
 #, php-format
@@ -408,11 +416,14 @@ msgid ""
 "A custom vocab named \"%s\" exists and has not the needed language (\"%s\"): "
 "check it or remove it before installing this module."
 msgstr ""
+"Un vocabulaire personnalisé nommé \"%s\" existe et n'utilise pas la même"
+" langue (\"%s\") : merci de vérifier ou de le supprimer avant d'installer ce"
+" module."
 
 #: src/Generic/InstallResources.php:303
 #, php-format
 msgid "The vocabulary \"%s\" was already installed and was kept."
-msgstr ""
+msgstr "Le vocabulaire \"%s\" a déjà été installé et a été conservé."
 
 #: src/Generic/InstallResources.php:313
 #, php-format
@@ -420,6 +431,9 @@ msgid ""
 "An error occured when adding the prefix \"%s\": another vocabulary exists "
 "with the same prefix. Resolve the conflict before installing this module."
 msgstr ""
+"Une erreur est survenue lors de l'ajout du préfixe \"%s\" : un autre"
+" vocabulaire existe avec le même préfixe. Merci de résoudre le conflit avant"
+" d'installer ce module."
 
 #: src/Generic/InstallResources.php:333
 #, php-format
@@ -427,13 +441,16 @@ msgid ""
 "An error occured when adding the prefix \"%s\" and the associated "
 "properties: %s"
 msgstr ""
+"Une erreur est survenue en ajoutant le préfixe \"%s\" et les propriétés"
+" associées : %s"
 
 #: src/Generic/InstallResources.php:363
 #, php-format
 msgid "The resource template named \"%s\" is already available and is skipped."
 msgstr ""
+"Le modèle de ressource nommé \"%s\" est déjà disponible et a été conservé."
 
 #: src/Generic/InstallResources.php:388 src/Generic/InstallResources.php:549
 #, php-format
 msgid "The custom vocab named \"%s\" is not available."
-msgstr ""
+msgstr "Le vocabulaire personnalisé nommé \"%s\" n'est pas disponible."
