@@ -1,11 +1,11 @@
 {
-  "name": "omeka-s-module-annotate",
-  "version": "3.0.0",
-  "license": "CECILL-2.1",
-  "description": "Annotate (module for Omeka S)",
+  "name": "omeka-s-module-generateur",
+  "version": "3.0.1",
+  "license": "CC0-1.0",
+  "description": "Generateur (module for Omeka S)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Daniel-KM/Omeka-S-module-Annotate.git"
+    "url": "https://github.com/Daniel-KM/Omeka-S-module-Generateur.git"
   },
   "dependencies": {
     "webui-popover": "^1.2.18"

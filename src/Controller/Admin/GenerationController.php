@@ -40,12 +40,12 @@ class GenerationController extends AbstractActionController
         }
 
         $formDeleteSelected = $this->getForm(ConfirmForm::class);
-        $formDeleteSelected->setAttribute('action', $this->url()->fromRoute('admin/generateur/default', ['action' => 'batch-delete'], true));
+        $formDeleteSelected->setAttribute('action', $this->url()->fromRoute('admin/generation/default', ['action' => 'batch-delete'], true));
         $formDeleteSelected->setButtonLabel('Confirm Delete'); // @translate
         $formDeleteSelected->setAttribute('id', 'confirm-delete-selected');
 
         $formDeleteAll = $this->getForm(ConfirmForm::class);
-        $formDeleteAll->setAttribute('action', $this->url()->fromRoute('admin/generateur/default', ['action' => 'batch-delete-all'], true));
+        $formDeleteAll->setAttribute('action', $this->url()->fromRoute('admin/generation/default', ['action' => 'batch-delete-all'], true));
         $formDeleteAll->setButtonLabel('Confirm Delete'); // @translate
         $formDeleteAll->setAttribute('id', 'confirm-delete-all');
         $formDeleteAll->get('submit')->setAttribute('disabled', true);

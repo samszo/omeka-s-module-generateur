@@ -71,9 +71,6 @@ return [
         ],
     ],
     'form_elements' => [
-        'invokables' => [
-            Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
-        ],
         'factories' => [
             Form\GenerateurForm::class => Service\Form\GenerateurFormFactory::class,
             Form\QuickSearchForm::class => Service\Form\QuickSearchFormFactory::class,
@@ -102,20 +99,20 @@ return [
     ],
     'navigation' => [
         'AdminResource' => [
-            'generateur' => [
+            'generation' => [
                 'label' => 'Generations', // @translate
-                'class' => 'generations far fa-hand-o-up',
-                'route' => 'admin/generateur/default',
+                'class' => 'generations fas fa-redo',
+                'route' => 'admin/generation/default',
                 'resource' => Controller\Admin\GenerationController::class,
                 'privilege' => 'browse',
                 'pages' => [
                     [
-                        'route' => 'admin/generateur/id',
+                        'route' => 'admin/generation/id',
                         'controller' => Controller\Admin\GenerationController::class,
                         'visible' => false,
                     ],
                     [
-                        'route' => 'admin/generateur/default',
+                        'route' => 'admin/generation/default',
                         'controller' => Controller\Admin\GenerationController::class,
                         'visible' => false,
                     ],
@@ -127,7 +124,7 @@ return [
         'routes' => [
             'site' => [
                 'child_routes' => [
-                    'generateur' => [
+                    'generation' => [
                         'type' => \Zend\Router\Http\Literal::class,
                         'options' => [
                             'route' => '/generation',
@@ -171,7 +168,7 @@ return [
             ],
             'admin' => [
                 'child_routes' => [
-                    'generateur' => [
+                    'generation' => [
                         'type' => \Zend\Router\Http\Literal::class,
                         'options' => [
                             'route' => '/generation',
@@ -228,29 +225,19 @@ return [
     'js_translate_strings' => [
         'Search generations', // @target
         'Generations', // @target
-        'Web Open Generation', // @target
-        'With the class <code>oa:Generation</code>, it’s important to choose the part of the generation to which the property is attached:', // @target
-        'It can be the generation itself (default), but the body or the target too.', // @target
-        'For example, to add an indication on a uncertainty of  a highlighted segment, the property should be attached to the target, but the description of a link should be attached to the body.', // @target
-        'Standard non-ambivalent properties are automatically managed.', // @target
         'Generation', // @target
-        'Generation part', // @target
-        'To comply with Generation data model, select the part of the generation this property will belong to.', // @target
-        'This option cannot be imported/exported currently.', // @target
-        'Generation', // @target
-        'Generation body', // @target
-        'Generation target', // @target
     ],
-    'generateur' => [
-        'config' => [
-            'generateur_public_allow_view' => true,
-            'generateur_public_allow_generateur' => false,
-            'generateur_resource_template_data' => [],
-        ],
-        'site_settings' => [
-            'generateur_append_item_set_show' => false,
-            'generateur_append_item_show' => true,
-            'generateur_append_media_show' => false,
+    'blocksdisposition' => [
+        'views' => [
+            'item_set_show' => [
+                // 'Generation',
+            ],
+            'item_show' => [
+                'Generation',
+            ],
+            'media_show' => [
+                // 'Generation',
+            ],
         ],
     ],
     'csvimport' => [
@@ -263,11 +250,11 @@ return [
                 ],
             ],
         ],
-        'user_settings' => [
-            'csvimport_automap_user_list' => [
-                'motivation' => 'generation {oa:motivatedBy}',
-                'purpose' => 'generation_target {oa:hasPurpose}',
-            ],
+    ],
+    'generateur' => [
+        'config' => [
+            'generateur_public_allow_view' => true,
+            'generateur_public_allow_generate' => false,
         ],
     ],
 ];

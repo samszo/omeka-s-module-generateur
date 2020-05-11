@@ -644,13 +644,6 @@ class Module extends AbstractModule
             [$this, 'handleResourceTemplateDeletePost']
         );
 
-        // Site settings.
-        $sharedEventManager->attach(
-            \Omeka\Form\SiteSettingsForm::class,
-            'form.add_elements',
-            [$this, 'handleSiteSettings']
-        );
-
         // Display a warn before uninstalling.
         $sharedEventManager->attach(
             'Omeka\Controller\Admin\Module',
@@ -949,7 +942,7 @@ class Module extends AbstractModule
         }
         $view->headLink()
             ->appendStylesheet($view->assetUrl('css/generateur-admin.css', 'Generateur'));
-        $searchUrl = sprintf('var searchGenerationsUrl = %s;', json_encode($view->url('admin/generateur/default', ['action' => 'browse'], true), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $searchUrl = sprintf('var searchGenerationsUrl = %s;', json_encode($view->url('admin/generation/default', ['action' => 'browse'], true), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         $view->headScript()
             ->appendScript($searchUrl)
             ->appendFile($view->assetUrl('js/generateur-admin.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
@@ -1043,7 +1036,7 @@ class Module extends AbstractModule
         $options = [];
         $attributes = [];
         $attributes['action'] = $url(
-            'admin/generateur/default',
+            'admin/generation/default',
             ['action' => 'generateur'],
             ['query' => ['redirect' => $resource->adminUrl() . '#generateur']]
         );
