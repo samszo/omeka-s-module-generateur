@@ -378,13 +378,6 @@ class Module extends AbstractModule
             [$this, 'addHeadersAdmin']
         );
 
-        // Allows to search resource template by resource class.
-        $sharedEventManager->attach(
-            \Omeka\Api\Adapter\ResourceTemplateAdapter::class,
-            'api.search.query',
-            [$this, 'searchQueryResourceTemplate']
-        );
-
         // Events for the public front-end.
         $controllers = [
             'Omeka\Controller\Site\Item',
@@ -454,24 +447,6 @@ class Module extends AbstractModule
             );
         }
 
-        // Add a tab to the resource template admin pages.
-        // Can be added to the view of the form too.
-        $sharedEventManager->attach(
-            \Omeka\Api\Adapter\ResourceTemplateAdapter::class,
-            'api.create.post',
-            [$this, 'handleResourceTemplateCreateOrUpdatePost']
-        );
-        $sharedEventManager->attach(
-            \Omeka\Api\Adapter\ResourceTemplateAdapter::class,
-            'api.update.post',
-            [$this, 'handleResourceTemplateCreateOrUpdatePost']
-        );
-        $sharedEventManager->attach(
-            \Omeka\Api\Adapter\ResourceTemplateAdapter::class,
-            'api.delete.post',
-            [$this, 'handleResourceTemplateDeletePost']
-        );
-
         // Display a warn before uninstalling.
         $sharedEventManager->attach(
             'Omeka\Controller\Admin\Module',
@@ -512,55 +487,6 @@ class Module extends AbstractModule
     }
 
     /**
-     * Helper to filter search queries for resource templates.
-     *
-     * @param Event $event
-     */
-    public function searchQueryResourceTemplate(Event $event)
-    {
-        $query = $event->getParam('request')->getContent();
-        if (empty($query['resource_class'])) {
-            return;
-        }
-
-        list($prefix, $localName) = explode(':', $query['resource_class']);
-
-        /** @var \Doctrine\ORM\QueryBuilder $qb */
-        $qb = $event->getParam('queryBuilder');
-        /** @var \Omeka\Api\Adapter\ResourceTemplateAdapter $adapter */
-        $adapter = $event->getTarget();
-
-        $isOldOmeka = \Omeka\Module::VERSION < 2;
-        $resourceTemplateAlias = $isOldOmeka ? $adapter->getEntityClass() : 'omeka_root';
-
-        $expr = $qb->expr();
-        $resourceClassAlias = $adapter->createAlias();
-        $qb->innerJoin(
-            $resourceTemplateAlias . '.resourceClass',
-            $resourceClassAlias
-        );
-        $vocabularyAlias = $adapter->createAlias();
-        $qb->innerJoin(
-            \Omeka\Entity\Vocabulary::class,
-            $vocabularyAlias,
-            \Doctrine\ORM\Query\Expr\Join::WITH,
-            $expr->eq($resourceClassAlias . '.vocabulary', $vocabularyAlias . '.id')
-        );
-        $qb->andWhere(
-            $expr->andX(
-                $expr->eq(
-                    $vocabularyAlias . '.prefix',
-                    $adapter->createNamedParameter($qb, $prefix)
-                ),
-                $expr->eq(
-                    $resourceClassAlias . '.localName',
-                    $adapter->createNamedParameter($qb, $localName)
-                )
-            )
-        );
-    }
-
-    /**
      * Display the advanced search form for generations via partial.
      *
      * @param Event $event
@@ -570,21 +496,6 @@ class Module extends AbstractModule
         $query = $event->getParam('query', []);
         $query['datetime'] = isset($query['datetime']) ? $query['datetime'] : '';
         $partials = $event->getParam('partials', []);
-
-        // Remove the resource class field, since it is always "oa:Generation".
-        $key = array_search('common/advanced-search/resource-class', $partials);
-        if ($key !== false) {
-            unset($partials[$key]);
-        }
-
-        // Replace the resource template field, since the templates are
-        // restricted to the class "oa:Generation".
-        $key = array_search('common/advanced-search/resource-template', $partials);
-        if ($key === false) {
-            $partials[] = 'common/advanced-search/resource-template-generation';
-        } else {
-            $partials[$key] = 'common/advanced-search/resource-template-generation';
-        }
 
         $partials[] = 'common/advanced-search/date-time-generation';
 
@@ -677,53 +588,6 @@ class Module extends AbstractModule
         }
 
         $event->setParam('filters', $filters);
-    }
-
-    public function handleResourceTemplateCreateOrUpdatePost(Event $event)
-    {
-        // TODO Allow to require a value for body or target via the template.
-
-        // The acl are already checked via the api.
-        $request = $event->getParam('request');
-        $response = $event->getParam('response');
-        $services = $this->getServiceLocator();
-        $api = $services->get('Omeka\ApiManager');
-        $controllerPlugins = $services->get('ControllerPluginManager');
-        $generationPartMapper = $controllerPlugins->get('generationPartMapper');
-
-        $result = [];
-        $requestContent = $request->getContent();
-        $requestResourceProperties = isset($requestContent['o:resource_template_property']) ? $requestContent['o:resource_template_property'] : [];
-        foreach ($requestResourceProperties as $propertyId => $requestResourceProperty) {
-            if (!isset($requestResourceProperty['data']['generation_part'])) {
-                continue;
-            }
-            try {
-                /** @var \Omeka\Api\Representation\PropertyRepresentation $property */
-                $property = $api->read('properties', $propertyId)->getContent();
-            } catch (\Omeka\Api\Exception\NotFoundException $e) {
-                continue;
-            }
-            $term = $property->term();
-            $result[$term] = $generationPartMapper($term, $requestResourceProperty['data']['generation_part']);
-        }
-
-        $resourceTemplateId = $response->getContent()->getId();
-        $settings = $services->get('Omeka\Settings');
-        $resourceTemplateData = $settings->get('generateur_resource_template_data', []);
-        $resourceTemplateData[$resourceTemplateId] = $result;
-        $settings->set('generateur_resource_template_data', $resourceTemplateData);
-    }
-
-    public function handleResourceTemplateDeletePost(Event $event)
-    {
-        // The acl are already checked via the api.
-        $id = $event->getParam('request')->getId();
-        $services = $this->getServiceLocator();
-        $settings = $services->get('Omeka\Settings');
-        $resourceTemplateData = $settings->get('generateur_resource_template_data', []);
-        unset($resourceTemplateData[$id]);
-        $settings->set('generateur_resource_template_data', $resourceTemplateData);
     }
 
     public function addCsvImportFormElements(Event $event)
