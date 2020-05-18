@@ -48,7 +48,7 @@ class GenerateurForm extends Form
                 'name' => 'submit',
                 'attributes' => [
                     'value' => 'Generate!', // @translate
-                    'class' => 'generations fas fa-redo',
+                    'class' => 'generations fas fa-recycle',
                 ],
             ])
         ;

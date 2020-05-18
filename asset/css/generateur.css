@@ -97,7 +97,7 @@
         list-style-type: none;
     }
     #generations .o-icon-generation::before {
-        content: "";
+        content: "";
     }
     #generations .o-icon-item-set::before {
         content: "";

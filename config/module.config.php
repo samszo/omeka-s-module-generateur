@@ -59,7 +59,7 @@ return [
         'AdminResource' => [
             'generation' => [
                 'label' => 'Generations', // @translate
-                'class' => 'generations fas fa-redo',
+                'class' => 'generations fas fa-recycle',
                 'route' => 'admin/generation/default',
                 'resource' => Controller\Admin\GenerationController::class,
                 'privilege' => 'browse',

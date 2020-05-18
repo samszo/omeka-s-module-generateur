@@ -1,18 +1,18 @@
 @media screen {
-    .generations.fas.fa-redo {
+    .generations.fas.fa-recycle {
         font-family: inherit;
         font-weight: inherit;
     }
 
     header nav .generations::before,
     .generations .subhead::before {
-        content:"";
+        content:"";
     }
     .generations .no-resources:before {
-        content:"";
+        content:"";
     }
     #generateur .no-resources:before {
-        content:"";
+        content:"";
     }
 
     /* generation browse */
@@ -24,7 +24,7 @@
         line-height: 1;
         vertical-align: -.125em;
         font-family: "Font Awesome 5 Free";
-        content: "\f01e";
+        content: "\f1b8";
         padding: .25em;
     }
     .generations .sidebar.search .advanced-search {
@@ -143,7 +143,7 @@
         float: right;
     }
     #generations .o-icon-generation::before {
-        content: "";
+        content: "";
     }
     #generations .o-icon-item-set::before {
         content: "";
