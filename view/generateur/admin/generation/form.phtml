@@ -1,0 +1,62 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation $generation
+ * @var \Omeka\Form\ResourceForm $form
+ * @var string $action
+ * @var string $deleteButton
+ */
+
+$translate = $this->plugin('translate');
+$hyperlink = $this->plugin('hyperlink');
+$this->headLink()->appendStylesheet($this->assetUrl('css/generateur-admin.css', 'Generateur'));
+$this->headScript()->appendFile($this->assetUrl('js/resource-form.js', 'Omeka'), 'text/javascript', ['defer' => 'defer']);
+
+/*
+$sectionNavs = [
+    'generation-metadata' => $translate('Metadata'),
+];
+*/
+
+$form->prepare();
+$formElement = $this->plugin('formElement');
+?>
+
+<?= $this->form()->openTag($form) ?>
+
+<?php // echo $this->sectionNav($sectionNavs, $sectionNavEvent); ?>
+
+<?php $this->trigger("view.$action.form.before", ['form' => $form]); ?>
+
+<?= $this->partial('common/resource-fields.phtml', [
+    'form' => $form,
+    'resource' => $generation,
+]); ?>
+
+<div id="page-actions">
+    <?php if ($generation && $generation->isPublic() || !isset($generation)): ?>
+    <?= $hyperlink('', '#', [
+        'class' => 'o-icon-public button',
+        'title' => $translate('Make private'),
+    ]); ?>
+    <input type="hidden" name="o:is_public" value="1">
+    <?php else: ?>
+    <?= $hyperlink('', '#', [
+        'class' => 'o-icon-private button',
+        'title' => $translate('Make public'),
+    ]); ?>
+    <input type="hidden" name="o:is_public" value="0">
+    <?php endif; ?>
+
+    <?= (isset($deleteButton)) ? $deleteButton : '' ?>
+    <?= $this->cancelButton() ?>
+    <input type="submit" name="add-generation-submit" value="<?= $translate('Save') ?>">
+</div>
+
+<?php $this->trigger("view.$action.form.after", ['form' => $form]); ?>
+
+<?= $formElement($form->get('csrf')) ?>
+
+<?= $this->form()->closeTag() ?>
+
+<?= $this->partial('common/resource-form-templates.phtml') ?>

@@ -1,0 +1,32 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation $resource
+ * @var \Generateur\Api\Representation\GenerationRepresentation $generation
+ */
+
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+
+$this->htmlElement('body')->appendAttribute('class', 'generations show');
+
+?>
+
+<?= $this->pageTitle($generation->displayTitle(), 2) ?>
+<h3><?= $translate('Generation') ?></h3>
+<?php $this->trigger('view.show.before'); ?>
+
+<div id="generation-metadata" class="active section">
+    <div class="meta-group">
+        <h4><?= $translate('Owner') ?></h4>
+        <div class="value"><?= $generation->owner() ? $generation->owner()->name() : $translate['[removed]'] ?></div>
+    </div>
+    <div class="meta-group">
+        <h4><?= $translate('Created') ?></h4>
+        <div class="value"><?= $escape($generation->created()->format('Y-m-d H:i:s')) ?></div>
+    </div>
+    <h4><?= $translate('Metadata') ?></h4>
+    <?= $generation->displayValues() ?>
+</div>
+
+<?php $this->trigger('view.show.after'); ?>

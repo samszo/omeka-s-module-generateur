@@ -1,0 +1,45 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation[] $generations
+ */
+
+// TODO Use paginator like linked resources.
+
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$assetUrl = $this->plugin('assetUrl');
+
+$this->headLink()
+    ->appendStylesheet($assetUrl('vendor/tablesaw/tablesaw.stackonly.css', 'Omeka'))
+    ->appendStylesheet($assetUrl('vendor/webui-popover/jquery.webui-popover.min.css', 'Generateur'))
+    ->appendStylesheet($assetUrl('css/generateur.css', 'Generateur'));
+$this->headScript()
+    ->appendFile($assetUrl('vendor/tablesaw/tablesaw.stackonly.jquery.js', 'Omeka'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($assetUrl('vendor/webui-popover/jquery.webui-popover.min.js', 'Generateur'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($assetUrl('js/generateur.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
+?>
+
+<div id="generations" class="generations">
+<h3><?= $translate('Generations') ?></h3>
+<?php if (empty($generations)): ?>
+    <div class="no-resources">
+        <p><?= $translate('There are no generations for this resource.') ?></p>
+    </div>
+<?php else: ?>
+    <?php foreach ($generations as $generation): ?>
+<div class="generation">
+
+<table>
+<caption class="generation-caption">
+    <?= sprintf($translate('[Generation #%d]'), $generation->id()) ?>
+    <span class="generation-created"><?= $generation->created()->format('Y-m-d H:i:s') ?></span>
+    <span class="generation-owner"><?= $generation->owner() ? $generation->owner()->name() : $translate('[removed]') ?></span>
+</caption>
+</table>
+
+</div>
+<?php endforeach; ?>
+
+<?php endif; ?>
+</div>

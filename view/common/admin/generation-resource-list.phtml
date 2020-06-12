@@ -1,0 +1,80 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation[] $generations
+ */
+
+// TODO Use paginator like linked resources.
+
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$hyperlink = $this->plugin('hyperlink');
+
+$this->headLink()
+    ->appendStylesheet($this->assetUrl('vendor/webui-popover/jquery.webui-popover.min.css', 'Generateur'))
+    ->appendStylesheet($this->assetUrl('css/generateur-admin.css', 'Generateur'));
+$this->headScript()
+    ->appendFile($this->assetUrl('vendor/webui-popover/jquery.webui-popover.min.js', 'Generateur'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($this->assetUrl('js/generateur-admin.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
+?>
+
+<div id="generations" class="generations">
+<?php if (empty($generations)): ?>
+    <div class="no-resources">
+        <p><?= $translate('There are no generations for this resource.') ?></p>
+    </div>
+<?php else: ?>
+    <?php foreach ($generations as $generation): ?>
+<div class="generation">
+
+<table>
+<caption class="generation-caption">
+    <?= $generation->linkPretty() ?>
+    <span class="generation-created"><?= $generation->created()->format('Y-m-d H:i:s') ?></span>
+    <span class="generation-owner"><?= $generation->owner() ? $generation->owner()->link($generation->owner()->name()) : $translate('[removed]') ?></span>
+    <?php if (!$generation->isPublic()): ?>
+    <span class="o-icon-private" aria-label="Private"></span>
+    <?php endif; ?>
+
+    <ul class="actions">
+        <li>
+            <span>
+            <?= $generation->link('', 'show', ['class' => 'o-icon-generation', 'title' => $translate('Show generation')]) ?>
+            </span>
+        </li>
+        <?php if ($generation->userIsAllowed('update')): ?>
+        <li>
+            <span>
+            <?= $generation->link('', 'edit', ['class' => 'o-icon-edit', 'title' => $translate('Edit generation')]) ?>
+            </span>
+        </li>
+        <?php endif; ?>
+        <?php if ($generation->userIsAllowed('delete')): ?>
+        <li>
+            <?php
+            $redirect = $this->serverUrl(true) . '#generateur';
+            echo $hyperlink('', '#', [
+                'data-sidebar-selector' => '#sidebar',
+                'data-sidebar-content-url' => $generation->url('delete-confirm') . '?' . http_build_query(['redirect' => $redirect]),
+                'class' => 'o-icon-delete sidebar-content',
+                'title' => $translate('Delete generation'),
+            ]); ?>
+        </li>
+        <?php endif; ?>
+    </ul>
+</caption>
+</table>
+
+</div>
+<?php endforeach; ?>
+
+<?php endif; ?>
+</div>
+
+<div id="sidebar" class="sidebar">
+    <?= $hyperlink('', '#', [
+        'class' => 'sidebar-close o-icon-close',
+        'title' => $translate('Close'),
+    ]); ?>
+    <div class="sidebar-content"></div>
+</div>

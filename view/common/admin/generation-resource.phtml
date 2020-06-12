@@ -1,0 +1,38 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation[] $generations
+ * @var int $totalGenerations
+ */
+
+if ($generations):
+
+$translate = $this->plugin('translate');
+$assetUrl = $this->plugin('assetUrl');
+
+$this->headLink()
+    ->appendStylesheet($assetUrl('vendor/webui-popover/jquery.webui-popover.min.css', 'Generateur'))
+    ->appendStylesheet($assetUrl('css/generateur-admin.css', 'Generateur'));
+$this->headScript()
+    ->appendFile($assetUrl('vendor/webui-popover/jquery.webui-popover.min.js', 'Generateur'), 'text/javascript', ['defer' => 'defer'])
+    ->appendFile($assetUrl('js/generateur-admin.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
+?>
+
+<div class="meta-group generations">
+    <h4><?= sprintf($translate('Generations (%d)'), $totalGenerations) ?></h4>
+    <?php foreach ($generations as $generation): ?>
+    <div class="value generation"><?= $generation->linkPretty() ?>
+        <?php if (!$generation->isPublic()): ?>
+        <span class="o-icon-private" aria-label="Private"></span>
+        <?php endif; ?>
+        <?php // TODO Add a display of the generation in popover. ?>
+        <?php if ($generation->userIsAllowed('update')): ?>
+        <span class="single-action">
+        <?= $generation->link('', 'edit', ['class' => 'o-icon-edit']) ?>
+        </span>
+        <?php endif; ?>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<?php endif; ?>

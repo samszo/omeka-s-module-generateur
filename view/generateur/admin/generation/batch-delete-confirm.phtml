@@ -1,0 +1,14 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Form\ConfirmForm $form
+ */
+
+$translate = $this->plugin('translate');
+?>
+
+<div id="sidebar-confirm">
+    <h3><?= $translate('Delete generations') ?></h3>
+    <p><?= $translate('Are you sure you would like to delete the selected generations?') ?></p>
+    <?= $this->form($this->form) ?>
+</div>

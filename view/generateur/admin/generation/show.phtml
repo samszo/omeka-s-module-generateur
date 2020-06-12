@@ -1,0 +1,53 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation $resource
+ * @var \Generateur\Api\Representation\GenerationRepresentation $generation
+ */
+
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$this->headLink()->appendStylesheet($this->assetUrl('css/generateur-admin.css', 'Generateur'));
+// $this->headScript()->appendFile($this->assetUrl('js/generateur-admin.js', 'Generateur'), 'text/javascript', ['defer' => 'defer']);
+
+$this->htmlElement('body')->appendAttribute('class', 'generations show');
+
+/*
+$sectionNavs = [
+    'generation-metadata' => $translate('Metadata'),
+];
+*/
+?>
+
+<?= $this->pageTitle($generation->displayTitle(), 1, $translate('Generations')) ?>
+<div id="page-actions">
+    <?php if ($generation->userIsAllowed('update')): ?>
+    <?= $generation->link($translate('Edit generation'), 'edit', ['class' => 'button']) ?>
+    <?php endif; ?>
+</div>
+
+<?php // echo $this->sectionNav($sectionNavs, 'view.show.section_nav', $generation); ?>
+
+<div id="generation-metadata" class="active section">
+    <?= $generation->displayValues() ?>
+</div>
+
+<div class="sidebar active">
+    <?= $this->thumbnail($generation, 'square') ?>
+    <div class="meta-group">
+        <h4><?= $translate('Visibility') ?></h4>
+        <div class="value"><?= ($generation->isPublic()) ? $escape($translate('Public')) : $escape($translate('Private')) ?></div>
+    </div>
+    <div class="meta-group">
+        <h4><?= $translate('Created') ?></h4>
+        <div class="value"><?= $escape($generation->created()->format('Y-m-d H:i:s')) ?></div>
+    </div>
+    <div class="meta-group">
+        <h4><?= $translate('Owner') ?></h4>
+        <div class="value"><?= $generation->owner() ? $generation->owner()->adminUrl(): $translate('[removed]')  ?></div>
+    </div>
+
+    <?php $this->trigger('view.show.sidebar'); ?>
+</div>
+
+<?php $this->trigger('view.show.after'); ?>

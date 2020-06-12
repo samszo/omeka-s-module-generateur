@@ -1,0 +1,160 @@
+@media screen {
+    /* generation show */
+    .generations .generation-caption {
+        background-color: rgba(0,0,0,0.04);
+        font-family: bold;
+        padding: 6px;
+        font-family: "Lato", sans-serif;
+        font-weight: bold;
+        text-align: left;
+    }
+    #generation-bodies .meta-group .meta-group,
+    #generation-targets .meta-group .meta-group {
+        overflow: hidden;
+        display: -webkit-box;
+        display: flex;
+        -webkit-box-pack: end;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+    #generation-bodies .meta-group .meta-group h4,
+    #generation-targets .meta-group .meta-group h4 {
+        width: 22.22222%;
+        vertical-align: top;
+        padding: 6px 0;
+    }
+    #generation-bodies .meta-group .meta-group .value,
+    #generation-targets .meta-group .meta-group .value {
+        padding: 6px;
+        margin-bottom: 0;
+        word-wrap: break-word;
+        width: 77.77778%;
+    }
+
+    /* Resource show details */
+    .generations .o-icon-private {
+        display: inline-block;
+        vertical-align: bottom;
+        margin-left: .5em;
+        opacity: .5;
+    }
+
+    /* Adapted from core _screen.scss #linked-resources and .linked-resource */
+    #generations table {
+        margin-bottom: 0;
+    }
+    #generations .generation {
+        margin-bottom: 24px;
+    }
+
+    #generations table {
+        width: 100%;
+        border-spacing: 0;
+        table-layout: fixed;
+    }
+    #generations table,
+    #generations table.tablesaw {
+        margin-bottom: 12px;
+        border: 1px solid #dfdfdf;
+        border-radius: 3px;
+        border-collapse: separate;
+    }
+
+    #generations caption {
+        background-color: rgba(0,0,0,0.04);
+        font-family: bold;
+        padding: 6px;
+        font-family: "Lato", sans-serif;
+        font-weight: bold;
+        text-align: left;
+    }
+    #generations caption span:not(.resource-name) {
+        font-weight: normal;
+    }
+    #generations caption span.generation-created {
+        font-size: smaller;
+    }
+    #generations caption span.generation-owner {
+        font-size: smaller;
+        border-left: #888888 1px solid;
+        margin-left: 0;
+        padding-left: 6px;
+    }
+    #generations th {
+       border-bottom: 3px solid #dfdfdf;
+    }
+    .generation-body,
+    .generation-target {
+        margin-bottom: 12px;
+        padding-bottom: 11px;
+        border-bottom: 1px solid #dfdfdf;
+    }
+
+    #generations .actions {
+        float: right;
+    }
+    #generations .actions li {
+        list-style-type: none;
+    }
+    #generations .o-icon-generation::before {
+        content: "";
+    }
+    #generations .o-icon-item-set::before {
+        content: "";
+    }
+    #generations .o-icon-item::before {
+        content: "";
+    }
+    #generations .o-icon-media::before {
+        content: "";
+    }
+
+    span.oa-motivated-by,
+    span.oa-has-purpose {
+        padding-left: 6px;
+        padding-right: 6px;
+        border-right: solid 1px;
+    }
+
+    span.oa-motivated-by:first-of-type,
+    span.oa-has-purpose:first-of-type {
+        padding-left: initial;
+    }
+    span.oa-motivated-by:last-of-type,
+    span.oa-has-purpose:last-of-type {
+        padding-right: initial;
+        border-right: none;
+    }
+    caption.generation-body span.oa-motivated-by {
+        font-style: italic;
+        font-weight: normal;
+    }
+
+    .generation .single-action {
+        margin-top: -6px;
+        float: right;
+        opacity: .5;
+    }
+    .generation .single-action:hover {
+        opacity: 1;
+    }
+
+    .show .generations table th:first-of-type,
+    .show .generations table td:first-of-type {
+        min-width: 75%;
+        width: 75%;
+    }
+    .show .generations table th:last-of-type,
+    .show .generations table td:last-of-type {
+        max-width: 25%;
+        width: 25%;
+    }
+
+    .generateur .property {
+        display: initial;
+    }
+
+    #generateur form label[for=submit] {
+        display: none;
+    }
+}

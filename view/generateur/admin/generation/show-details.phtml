@@ -1,0 +1,47 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation $resource
+ */
+
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$hyperlink = $this->plugin('hyperlink');
+$generation = $resource;
+?>
+
+<div class="resource-details" data-resource-values="<?php //echo $escape($values); ?>">
+    <h3 class="o-module-generation"><?= $generation->linkPretty() ?></h3>
+    <div class="meta-group">
+        <?php $owner = $generation->owner(); ?>
+        <h4><?= $escape($translate('Owner')) ?> <?php if (!$owner): ?><span class="generation-public"><?= $translate('(public)') ?></span><?php endif; ?></h4>
+        <div class="value">
+            <?php if ($owner): ?>
+            <span class="generation-email"><?= $hyperlink(
+                $owner->email(),
+                $owner->url()
+            ); ?></span>
+            <span class="generation-name"><?= $owner->name() ?></span>
+            <?php else: ?>
+            <span class="generation-email generation-public"><?= $hyperlink($generation->email(), 'mailto:' . $generation->email()) ?></span>
+            <span class="generation-name"><?= $generation->name() ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?= $this->thumbnail($generation, 'square') ?>
+    <div class="meta-group">
+        <h4><?= $translate('Visibility') ?></h4>
+        <div class="value"><?= ($generation->isPublic()) ? $escape($translate('Public')) : $escape($translate('Private')) ?></div>
+    </div>
+    <div class="meta-group">
+        <h4><?= $translate('Created') ?></h4>
+        <div class="value"><?= $escape($generation->created()->format('Y-m-d H:i:s')) ?></div>
+    </div>
+    <div class="meta-group">
+        <h4><?= $translate('Owner') ?></h4>
+        <div class="value"><?= $owner ? $escape($owner->name()) : $translate('[removed]') ?></div>
+    </div>
+
+    <?php $this->trigger('view.details', array('entity' => $resource)); ?>
+</div>

@@ -1,0 +1,23 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var array $query
+ */
+
+$translate = $this->plugin('translate');
+$escapeAttr = $this->plugin('escapeHtmlAttr');
+$this->headLink()->appendStylesheet($this->assetUrl('css/generateur-admin.css', 'Generateur'));
+$this->htmlElement('body')->appendAttribute('class', 'generations search');
+?>
+
+<?= $this->pageTitle($translate('Advanced search'), 1, $translate('Generations')) ?>
+<form id="advanced-search" method="get" action="<?= $escapeAttr($this->url(null, ['action' => 'browse'], true)) ?>">
+<?= $this->partial(
+    'common/advanced-search',
+    ['query' => $query, 'resourceType' => 'generation']
+); ?>
+<div id="page-actions">
+    <?= $this->hyperlink($translate('Reset'), $this->url(null, [], true), ['class' => 'button']) ?>
+    <input type="submit" name="submit" value="<?= $escapeAttr($translate('Search')) ?>">
+</div>
+</form>

@@ -1,0 +1,31 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Generateur\Api\Representation\GenerationRepresentation $generation
+ * @var \Generateur\Api\Representation\GenerationRepresentation $resource
+ * @var \Omeka\Form\ResourceForm $form
+ */
+
+$translate = $this->plugin('translate');
+$this->htmlElement('body')->appendAttribute('class', 'generations edit');
+$deleteButton = $generation->userIsAllowed('delete')
+    ? '<a href="#" class="delete button">' . $translate('Delete') . '</a>'
+    : null;
+?>
+
+<?= $this->pageTitle($generation->displayTitle(), 1, $translate('Generations'), $translate('Edit')) ?>
+<?php $this->trigger('view.edit.before'); ?>
+<?php
+echo $this->partial('generateur/admin/generation/form.phtml', [
+    'form' => $form,
+    'generation' => $generation,
+    'submitLabel' => $translate('Save'),
+    'deleteButton' => $deleteButton,
+    'sectionNavEvent' => 'view.edit.section_nav',
+    'action' => 'edit',
+]);
+?>
+
+<?= $this->deleteConfirm($generation, 'generation') ?>
+
+<?php $this->trigger('view.edit.after'); ?>
