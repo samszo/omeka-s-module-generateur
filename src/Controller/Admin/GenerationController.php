@@ -166,13 +166,15 @@ class GenerationController extends AbstractActionController
         $data['o:resource_template']['o:id'] = $resourceTemplate->id();
 
         //generate data
-        $g = new Moteur($api);
-        $gData = $g->generate($data);
-        $oItem = $api->read('items', $data['o:resource']['o:id'])->getContent();
-        $gReseau = $g->getConceptReseau($oItem);
+        $cache = boolval($data['bCache']);
+        $g = new Moteur($api,$cache,$this);
+        $g->generate($data);
+
+        //$oItem = $api->read('items', $data['o:resource']['o:id'])->getContent();
+        //$gReseau = $g->getConceptReseau($oItem);
 
         // The form contains errors if any.
-        $response = $this->api($form)->create('generations', $data);
+        $response = $this->api($form)->create('generations', $g->getData());
         if (!$response) {
             if ($isAjax) {
                 return new JsonModel([

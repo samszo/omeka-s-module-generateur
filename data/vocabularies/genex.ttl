@@ -126,3 +126,8 @@ genex:hasType a rdf:Property ;
     rdfs:label "A comme type"@fr ;
     rdfs:comment "Utiliser pour définir le(s) type(s) d'un concept."@fr ;
     rdfs:domain o:Resource .
+
+genex:hasFlux a rdf:Property ;
+    rdfs:label "A comme flux"@fr ;
+    rdfs:comment "Utiliser pour enregistrer les flux générés."@fr ;
+    rdfs:domain o:Resource .

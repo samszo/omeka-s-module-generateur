@@ -44,6 +44,18 @@ class GenerateurForm extends Form
             ])
 
             ->add([
+                'name' => 'bCache',
+                'type' => Element\Checkbox::class,
+                'options' => [
+                    'label' => 'Use cache', // @translate
+                ],
+                'attributes' => [
+                    'value' => 1,
+                ],
+            ])
+
+
+            ->add([
                 'type' => Element\Submit::class,
                 'name' => 'submit',
                 'attributes' => [
