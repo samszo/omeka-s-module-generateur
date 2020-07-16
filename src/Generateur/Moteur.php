@@ -148,6 +148,7 @@ class Moteur {
 	var $arrEli = array("a", "e", "é", "ê", "i","o","u","y","h");
 	var $arrEliCode = array(195);
     var $arrCaract = array();
+    var $defautGenre = 1;   
 
     /**
      * Construct Moteur
@@ -621,7 +622,35 @@ class Moteur {
         $arr['vecteur']['pluriel']=$p[1];
 
         //récupère la conjugaison	        
+        $oConj = $this->getIdConjugaison($arr);
+
+        //vérifie si la conjugaison nécessite un prefix
+        $arr['prefixConj'] = $oConj->value('genex:hasPrefix') ? boolval($oConj->value('genex:hasPrefix')->asHtml()) : true;
+            
+		//gestion des terminaisons ---
+		$txt = $this->getTerminaison($oConj->id(),$arr['temps'],$p[0],$p[1]);
+		if($txt=="---" || $txt=="- ")$txt="";		
+        $arr['terminaison']=$txt;        
+
+        return $arr;
+    }		
+
+    /**
+     * Récupère la conjugaison d'un verbe
+     *
+     * @param array     $arr
+     * @param boolean   $bNull
+     *
+     * @return o:item;
+     */
+	function getIdConjugaison($arr, $bNull=false){
+
         $conj = $arr['item']->value('genex:hasConjugaison',['all'=>true]);
+        if(!$conj && !$bNull)
+            throw new RuntimeException("La conjugaison pour '".$arr['item']->displayTitle()."' n'a pas été trouvée.");			
+        if(!$conj && $bNull)
+            return false;			
+
         $idConj = false;
         foreach ($conj as $c) {
             if($c->type()=='resource'){
@@ -629,20 +658,14 @@ class Moteur {
                 $idConj = $oConj->id();                    
             }                
         }
-        if(!$idConj)
+        if(!$idConj && !$bNull)
             throw new RuntimeException("La conjugaison pour '".$arr['item']->displayTitle()."' n'a pas été trouvée.");			
-
-        //vérifie si la conjugaison nécessite un prefix
-        $arr['prefixConj'] = $oConj->value('genex:hasPrefix') ? boolval($oConj->value('genex:hasPrefix')->asHtml()) : true;
-            
-		//gestion des terminaisons ---
-		$txt = $this->getTerminaison($idConj,$arr['temps'],$p[0],$p[1]);
-		if($txt=="---")$txt="";		
-        $arr['terminaison']=$txt;        
-
-        return $arr;
-    }		
         
+        return $oConj;
+
+    }
+    
+
     /**
      * Récupère la terminaison d'une conjugaison
      *
@@ -810,7 +833,7 @@ class Moteur {
         $vecteur = $arr['vecteur'];
         //positionne les valeur par défaut
         if(!isset($vecteur["elision"]))$vecteur["elision"]="0";
-        if(!isset($vecteur["genre"]))$vecteur["elision"]="2";
+        if(!isset($vecteur["genre"]))$vecteur["elision"]=$this->defautGenre;
         $oItem = $arr['determinant'];
 		if($vecteur){			
             $this->c->logger()->info(__METHOD__.' '.$oItem->id(),$vecteur);
@@ -820,16 +843,16 @@ class Moteur {
                 $formDet = $oItem->value('lexinfo:singularNumberForm',['lang' => $this->lang, 'all'=>true]);
 
             if($vecteur["elision"]=="0" && $vecteur["genre"]=="1"){
-				$det = $formDet[1]->asHtml()." ";
+				$det = $formDet[1]->__toString()." ";
 			}
 			if($vecteur["elision"]=="0" && $vecteur["genre"]=="2"){
-				$det = $formDet[0]->asHtml()." ";
+				$det = $formDet[0]->__toString()." ";
 			}
 			if($vecteur["elision"]=="1" && $vecteur["genre"]=="1"){
-				$det = $formDet[3]->asHtml()." ";
+				$det = $formDet[3]->__toString()." ";
 			}
 			if($vecteur["elision"]=="1" && $vecteur["genre"]=="2"){
-				$det = $formDet[2]->asHtml()." ";
+				$det = $formDet[2]->__toString()." ";
 			}
 		}
         $arr['txtDeterminant'] = $det;		
@@ -877,7 +900,17 @@ class Moteur {
                             $term = isset($item["vecteur"]['genre'])
                                 && $item["vecteur"]['genre']=="2" ? $term[0]->asHtml() : $term[1]->asHtml();
                         }else
-                            $term = $term ? $term[0]->asHtml() : "";                            
+                            $term = $term ? $term[0]->asHtml() : "";
+                        //si la terminaison est vide 
+                        //on vérifie s'il faut chercher la terminaison du verbe à l'infinitif
+                        if($term==""){
+                            $oConj = $this->getIdConjugaison($item, true);
+                            if($oConj){
+                                $term = $this->getTerminaison($oConj->id(),'infinitif',$this->personnes[1][0],$this->personnes[1][1]);
+                                $hasprefix = $oConj->value('genex:hasPrefix') ? boolval($oConj->value('genex:hasPrefix')->asHtml()) : true;
+                                $prefix = $hasprefix ? $prefix : "";
+                            }   
+                        }
                         //construction du texte
                         $txt = $item['txtDeterminant'].$prefix.$term;    
                 }
@@ -907,7 +940,7 @@ class Moteur {
         
         //ajoute les vecteurs
         $elision = $oItem->value('genex:hasElision',['lang' => $this->lang]) ? $oItem->value('genex:hasElision',['lang' => $this->lang])->asHtml() : "0";//pas d'élision par défaut
-        $genre = $oItem->value('lexinfo:gender',['lang' => $this->lang]) ? $oItem->value('lexinfo:gender',['lang' => $this->lang])->asHtml() : "2";//masculin par défaut
+        $genre = $oItem->value('lexinfo:gender',['lang' => $this->lang]) ? $oItem->value('lexinfo:gender',['lang' => $this->lang])->asHtml() : $this->defautGenre;//masculin par défaut
         if(!isset($this->arrFlux[$this->ordre]["vecteur"])){
             $this->arrFlux[$this->ordre]["vecteur"]["elision"] = $elision;    
             $this->arrFlux[$this->ordre]["vecteur"]["genre"] = $genre;
@@ -919,18 +952,22 @@ class Moteur {
                 $this->arrFlux[$this->ordre]["vecteur"]["genre"] = $genre;
             }                    
         }
+
         //vérifie s'il faut ajouter gérer les vecteurs et les déterminants des niveaux précédents
-        for ($i = $niveau; $i > 0; $i--) {
-            if(isset($this->arrFlux[$this->ordre-1]["vecteur"])){
-                $this->arrFlux[$this->ordre]["vecteur"]["pluriel"] = $this->arrFlux[$this->ordre-1]["vecteur"]["pluriel"];    
-                $this->arrFlux[$this->ordre-1]["vecteur"]["genre"]=$genre;
-                $this->arrFlux[$this->ordre-1]["vecteur"]["elision"] = $elision;                    
+        if($niveau > 0){
+            $ordreNiveauBase = $this->ordre-$niveau+1;
+            if(isset($this->arrFlux[$ordreNiveauBase]["vecteur"])){
+                $this->arrFlux[$ordreNiveauBase]["vecteur"]["elision"] = $elision;                    
+                $this->arrFlux[$this->ordre]["vecteur"]["pluriel"] = isset($this->arrFlux[$ordreNiveauBase]["vecteur"]["pluriel"]) ? $this->arrFlux[$ordreNiveauBase]["vecteur"]["pluriel"] : false;    
+                //si le genre est déjà défini par '=1' on le récupère
+                if(isset($this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"]))$this->arrFlux[$this->ordre]["vecteur"]["genre"]=$this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"];
+                else $this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"]=$genre;
             }
-            if(isset($this->arrFlux[$this->ordre-1]["determinant"])){
-                $this->arrFlux[$this->ordre]["determinant"] = $this->arrFlux[$this->ordre-1]["determinant"];    
+            if(isset($this->arrFlux[$ordreNiveauBase]["determinant"])){
+                $this->arrFlux[$this->ordre]["determinant"] = $this->arrFlux[$ordreNiveauBase]["determinant"];    
             }
-            if(isset($this->arrFlux[$this->ordre-1]["determinant_verbe"])){
-                $this->arrFlux[$this->ordre]["determinant_verbe"] = $this->arrFlux[$this->ordre-1]["determinant_verbe"];    
+            if(isset($this->arrFlux[$ordreNiveauBase]["determinant_verbe"])){
+                $this->arrFlux[$this->ordre]["determinant_verbe"] = $this->arrFlux[$ordreNiveauBase]["determinant_verbe"];    
             }
         }
 
@@ -1164,13 +1201,18 @@ class Moteur {
     public function genGen($oItem, $niveau)
     {   
 
-        $texte = $oItem->value('dcterms:description')->asHtml();    
+        $texte = $oItem->value('dcterms:description')->__toString();    
         $this->arrFlux[$this->ordre]["gen"] = $texte;
         $this->c->logger()->info(__METHOD__.' '.$oItem->id().' = '.$texte);
 
         if($this->arrFlux[$this->ordre]["niveau"] > $this->maxNiv){
-            $this->arrFlux[$this->ordre]["ERREUR"] = "problème de boucle trop longue : ".$texte;			
-            throw new Exception("problème de boucle trop longue.<br/>".$this->detail);			
+            $erreur = "problème de boucle trop longue : ";
+            for ($i=0; $i <= $niveau; $i++) { 
+                $id = isset($this->arrFlux[$this->ordre-$i]["item"]) ? $this->arrFlux[$this->ordre-$i]["item"]->id() : -1;
+                $erreur .= " - ".$id;
+            }
+            $this->arrFlux[$this->ordre]["ERREUR"] = $erreur;                           
+            throw new RuntimeException($erreur);			
         }
     
         //parcourt l'ensemble du flux
@@ -1226,7 +1268,7 @@ class Moteur {
                     //transmet le pluriel et le genre
                     $this->arrFlux[$this->ordre]["vecteur"] = [
                         "pluriel"=> isset($this->arrFlux[$i]["vecteur"]["pluriel"]) ? $this->arrFlux[$i]["vecteur"]["pluriel"] : 0,
-                        "genre"=> isset($this->arrFlux[$i]["vecteur"]["genre"]) ? $this->arrFlux[$i]["vecteur"]["genre"] : 2,
+                        "genre"=> isset($this->arrFlux[$i]["vecteur"]["genre"]) ? $this->arrFlux[$i]["vecteur"]["genre"] : $this->defautGenre,
                     ];
                     return $this->arrFlux[$this->ordre]["vecteur"];
                 }
@@ -1278,16 +1320,43 @@ class Moteur {
 	public function getClass($class, $niveau){
 
         $this->c->logger()->info(__METHOD__.' '.$class);
+        $this->arrFlux[$this->ordre]["class"] = $class;        
 
 		//gestion du changement de position de la classe
 		$arrPosi=explode("@", $class);
         if(count($arrPosi)>1){
-        	//change l'ordre pour que la class substantif soit placé après
-        	$this->ordre ++;
+            $niveau ++; 
+            $this->arrFlux[$this->ordre]["niveau"] = $niveau;        
+            $ordreDeb = $this->ordre;
+            $this->ordre ++;
+            //calcul la chaine générative
+            foreach ($arrPosi as $c) {
+                $this->getClass($c, $niveau);
+                $niveau ++; 
+                $this->ordre ++;
+            }
+            $niveau --; 
+            $this->ordre --;
+            //supprime les déterminants sauf le premier d'un term
+            //met à jour les vecteurs
+            $sup = false;
+            for ($i=$ordreDeb; $i <= $this->ordre; $i++) { 
+                if($sup)unset($this->arrFlux[$i]["determinant"]);
+                if(isset($this->arrFlux[$i]["rc"]) && $this->arrFlux[$i]["rc"]=="genex:Term")$sup=true;
+                if(isset($this->arrFlux[$i]["vecteur"])){
+                    $this->arrFlux[$i]["vecteur"]["genre"] = $this->arrFlux[$this->ordre]["vecteur"]["genre"] ? $this->arrFlux[$this->ordre]["vecteur"]["genre"] : $this->defautGenre; 
+                    $this->arrFlux[$i]["vecteur"]["pluriel"] = $this->arrFlux[$ordreDeb]["vecteur"]["pluriel"] ? $this->arrFlux[$ordreDeb]["vecteur"]["pluriel"] : false; 
+                }
+            }
+        	/*change l'ordre pour que la class substantif soit placé après
+        	$this->arrFlux[$this->ordre]["niveau"] = $niveau; 
+            $this->ordre ++;
+            $niveau ++;
         	//calcul le substantifs
             $this->getClass($arrPosi[1], $niveau);
-            $vSub = $this->arrFlux[$this->ordre]["vecteur"];
+            $vSub = isset($this->arrFlux[$this->ordre]["vecteur"]) ? $this->arrFlux[$this->ordre]["vecteur"] : ['genre'=>1];
         	//redéfini l'ordre pour que la class adjectif soit placée avant
+            $niveau --;
         	$this->ordre --;
         	//avec le vecteur genre du substantif
         	$this->arrFlux[$this->ordre]["vecteur"]["genre"] = $vSub["genre"]; 
@@ -1298,13 +1367,12 @@ class Moteur {
             $elision = $oAdj->value('genex:hasElision',['lang' => $this->lang]) ? $oAdj->value('genex:hasElision',['lang' => $this->lang])->asHtml() : "0";//par d'élision par défaut
             $this->arrFlux[$this->ordre]["vecteur"]["elision"] = $elision;    
             //rédifini le nombre du substantif avec celui du determinant et de l'adjectif
-            $this->arrFlux[$this->ordre+1]["vecteur"]["pluriel"] = $this->arrFlux[$this->ordre]["vecteur"]["pluriel"];    
+            $this->arrFlux[$this->ordre+1]["vecteur"]["pluriel"] = isset($this->arrFlux[$this->ordre]["vecteur"]["pluriel"]) ? $this->arrFlux[$this->ordre]["vecteur"]["pluriel"] : false;    
+            */
         	return;
         }
 
-        $this->arrFlux[$this->ordre]["class"] = $class;        
-        $oItem = $this->getItemByClass($class);
-        
+        $oItem = $this->getItemByClass($class);        
         return $this->generate(null, $oItem, $niveau+1);
 
 	}
@@ -1465,6 +1533,23 @@ class Moteur {
 	 */
     function getFluxGen($exp){
 
+
+        //vérification du texte conditionnel                
+        $posCondi = strpos($exp, '<');
+        if ($posCondi === false) {    
+            //choisi s'il faut afficher le texte conditionnel
+            $a = mt_rand(0, 1000);        
+            if($a>500){
+                //on suprime les caractères conditionnels
+                $exp = str_replace("<", "", $exp);                        
+                $exp = str_replace(">", "", $exp);                        
+            }else{
+                //on suprime le texte entre le '<' et le '>'
+                $posCondiFin = strpos($exp, '>');
+                $exp = substr($exp, $posCondi, $posCondiFin-$posCondi);                        
+            }
+        }
+
         //récupère les générateur du texte
         $arrGen = $this->getGenInTxt($exp);
 
@@ -1475,7 +1560,9 @@ class Moteur {
             //retrouve la position du gen
             $deb = strpos($exp, $gen, $posi);
             $fin = strlen($gen)+$deb;
-            if($deb>$posi)$arrFlux[]=array('deb'=>$posi,'fin'=>$deb,'txt'=>substr($exp, $posi, $deb-$posi));
+            if($deb>$posi){
+                $txt = substr($exp, $posi, $deb-$posi);
+            }
             //décompose le générateur
             $genCompo = $this->getGenCompo($arrGen[1][$i]);
             $arrFlux[]=array('deb'=>$deb,'fin'=>$fin,'gen'=>$arrGen[1][$i],'compo'=>$genCompo);
@@ -1486,7 +1573,7 @@ class Moteur {
 
         return $arrFlux;
 
-    }
+    }  
 
     /**
 	 * recupère les générateurs d'une expression textuelle

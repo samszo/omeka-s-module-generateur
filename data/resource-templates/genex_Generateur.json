@@ -22,8 +22,50 @@
             "data_type_label": null,
             "vocabulary_namespace_uri": "http:\/\/purl.org\/dc\/terms\/",
             "vocabulary_label": "Dublin Core",
+            "local_name": "isReferencedBy",
+            "label": "Is Referenced By"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/purl.org\/dc\/terms\/",
+            "vocabulary_label": "Dublin Core",
             "local_name": "description",
             "label": "Description"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
+            "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
+            "local_name": "hasConcept",
+            "label": "A comme concept"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
+            "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
+            "local_name": "hasReseau",
+            "label": "A comme r\u00e9seau"
         }
-    ]
+    ],
+    "o:resource_class": {
+        "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
+        "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
+        "local_name": "Generateur",
+        "label": "G\u00e9n\u00e9rateur"
+    }
 }
