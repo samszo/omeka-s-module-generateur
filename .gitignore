@@ -10,3 +10,4 @@ node_modules
 .php_cs.cache
 composer.phar
 debug.log
+data/test.json

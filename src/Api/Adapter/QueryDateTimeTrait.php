@@ -72,7 +72,6 @@ trait QueryDateTimeTrait
             switch ($type) {
                 case Comparison::GT:
                     if (mb_strlen($value) < 19) {
-                        // TODO Mb substr_replace.
                         $value = substr_replace('9999-12-31 23:59:59', $value, 0, mb_strlen($value) - 19);
                     }
                     $param = $this->createNamedParameter($qb, $value);

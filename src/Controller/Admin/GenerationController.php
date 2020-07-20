@@ -5,6 +5,8 @@ use Generateur\Entity\Generation;
 use Generateur\Form\GenerateurForm;
 use Generateur\Form\QuickSearchForm;
 use Generateur\Form\ResourceForm;
+use Generateur\Generateur\Moteur;
+
 use Omeka\Form\ConfirmForm;
 use Omeka\Mvc\Exception\NotFoundException;
 use Omeka\Stdlib\Message;
@@ -160,11 +162,19 @@ class GenerationController extends AbstractActionController
                 $this->messenger()->addError('Resource template "Génération" not found'); // @translate
                 return $this->redirect()->toUrl($redirect);
             }
-        }
+        }        
         $data['o:resource_template']['o:id'] = $resourceTemplate->id();
 
+        //generate data
+        $cache = boolval($data['bCache']);
+        $g = new Moteur($api,$cache,$this);
+        $g->generate($data);
+
+        //$oItem = $api->read('items', $data['o:resource']['o:id'])->getContent();
+        //$gReseau = $g->getConceptReseau($oItem);
+
         // The form contains errors if any.
-        $response = $this->api($form)->create('generations', $data);
+        $response = $this->api($form)->create('generations', $g->getData());
         if (!$response) {
             if ($isAjax) {
                 return new JsonModel([

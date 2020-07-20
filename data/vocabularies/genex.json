@@ -1,0 +1,11 @@
+{
+    "vocabulary": {
+        "o:namespace_uri": "https://jardindesconnaissances.univ-paris8.fr/onto/genex#",
+        "o:prefix": "genex",
+        "o:label": "Générateur d'expressions",
+        "o:comment": "Générateur pour cultiver ses connaissances."
+    },
+    "strategy": "file",
+    "file": "genex.ttl",
+    "format": "turtle"
+}
