@@ -163,6 +163,7 @@ class Moteur {
         $this->cacheResourceClasses();
         $this->cacheResourceTemplate();
         $this->cacheProperties();
+        //TODO:trouver un autre moyen de gérer le cache
         $this->bCache = $bCache;
         $this->initCache();
         $this->c = $c;
@@ -241,66 +242,8 @@ class Moteur {
 			$texte = "";
 			if(isset($this->arrFlux[$i])){
 				$arr = $this->arrFlux[$i];
-				if(isset($arr["txt"])){
-					//vérifie le texte conditionnel
-					if($arr["txt"]=="<"){
-				        //choisi s'il faut afficher
-				        $a = mt_rand(0, 1000);        
-				        if($a>500){
-				        	$txtCondi = false;
-					        //vérifie si le texte conditionnel est imbriqué
-					        //pour sauter à la fin de la condition
-					        if(isset($this->arrFlux[$i+2]["txt"]) && $this->arrFlux[$i+2]["txt"]=="|"){
-					        	for ($j = $this->ordre; $j <= $ordreFin; $j++) {
-					        		if($this->arrFlux[$j]["txt"]=="|"
-					        			&& $this->arrFlux[$j+1]["txt"]==$this->arrFlux[$i+1]["txt"]
-						        		&& $this->arrFlux[$j+2]["txt"]==">"){
-						        			$i=$j+2;
-						        			$j=$ordreFin;		
-					        		}
-					        	}
-					        }
-				        }else{
-					        //vérifie si le texte conditionnel est imbriqué
-					        //attention pas plus de 10 imbrications
-					        if(isset($this->arrFlux[$this->ordre+2]["txt"]) && $this->arrFlux[$this->ordre+2]["txt"]=="|"){
-					        	$imbCondi[$this->arrFlux[$this->ordre+1]["txt"]] = true;
-					        	$i+=2;
-					        }
-				        }
-					}elseif($arr["txt"]==">"){
-				        //vérifie les conditionnels imbriqué
-				        if($imbCondi){
-				        	if(isset($imbCondi[$this->arrFlux[$this->ordre-1]["txt"]])){
-					        	$txtCondi = true;
-					        	$c = substr($this->texte,-2,1);
-					        	if($c=="|"){
-						        	$this->texte = substr($this->texte,0,-2);
-					        	}
-					        	//supprime la condition imbriquée
-					        	unset($imbCondi[$this->arrFlux[$this->ordre-1]["txt"]]);
-					        }else{
-					        	//cas des conditions dans condition imbriquée
-								$txtCondi = true;					        	
-					        }
-				        }else{
-							$txtCondi = true;
-				        }
-					}elseif($arr["txt"]=="{"){
-						//on saute les crochets de test
-					    for ($j = $this->ordre; $j <= $ordreFin; $j++) {
-					    	if($this->arrFlux[$j]["txt"]=="}"){
-					    		$i = $j+1;	
-					    	}
-					    }
-					}elseif($txtCondi){
-						if($arr["txt"]=="%"){
-							$texte .= $this->finLigne;	
-						}else{
-							$texte .= $arr["txt"];
-						}
-					}
-                    $this->texte .= $texte;
+				if(isset($arr["txt"])){					
+                    $this->texte .= str_replace("%",$this->finLigne,$arr["txt"]);
 				}elseif(isset($arr["ERREUR"]) && $this->showErr){
 					$this->texte .= '<ul><font color="#de1f1f" >ERREUR:'.$arr["ERREUR"].'</font></ul>';	
 				}elseif(isset($arr["item"])){	
@@ -1348,27 +1291,6 @@ class Moteur {
                     $this->arrFlux[$i]["vecteur"]["pluriel"] = $this->arrFlux[$ordreDeb]["vecteur"]["pluriel"] ? $this->arrFlux[$ordreDeb]["vecteur"]["pluriel"] : false; 
                 }
             }
-        	/*change l'ordre pour que la class substantif soit placé après
-        	$this->arrFlux[$this->ordre]["niveau"] = $niveau; 
-            $this->ordre ++;
-            $niveau ++;
-        	//calcul le substantifs
-            $this->getClass($arrPosi[1], $niveau);
-            $vSub = isset($this->arrFlux[$this->ordre]["vecteur"]) ? $this->arrFlux[$this->ordre]["vecteur"] : ['genre'=>1];
-        	//redéfini l'ordre pour que la class adjectif soit placée avant
-            $niveau --;
-        	$this->ordre --;
-        	//avec le vecteur genre du substantif
-        	$this->arrFlux[$this->ordre]["vecteur"]["genre"] = $vSub["genre"]; 
-        	//calcul l'adjectif et le déterminant
-            $this->getClass($arrPosi[0], $niveau);
-            //rédifini l'élision du déterminant avec celui de l'adjectif
-            $oAdj = $this->arrFlux[$this->ordre]['item'];
-            $elision = $oAdj->value('genex:hasElision',['lang' => $this->lang]) ? $oAdj->value('genex:hasElision',['lang' => $this->lang])->asHtml() : "0";//par d'élision par défaut
-            $this->arrFlux[$this->ordre]["vecteur"]["elision"] = $elision;    
-            //rédifini le nombre du substantif avec celui du determinant et de l'adjectif
-            $this->arrFlux[$this->ordre+1]["vecteur"]["pluriel"] = isset($this->arrFlux[$this->ordre]["vecteur"]["pluriel"]) ? $this->arrFlux[$this->ordre]["vecteur"]["pluriel"] : false;    
-            */
         	return;
         }
 
@@ -1458,6 +1380,7 @@ class Moteur {
             $query = ['property'=>[
                 ['joiner'=>'and','property'=>$this->properties['dcterms']['description']->id(),'type'=>'eq','text'=>$class]
             ]];
+            //TODO:trouver requête plus rapide pour éviter le cache ?
             $items = $this->api->search('items',$query)->getContent();
             
             if(count($items)==0)
@@ -1536,7 +1459,7 @@ class Moteur {
 
         //vérification du texte conditionnel                
         $posCondi = strpos($exp, '<');
-        if ($posCondi === false) {    
+        if ($posCondi !== false) {    
             //choisi s'il faut afficher le texte conditionnel
             $a = mt_rand(0, 1000);        
             if($a>500){
@@ -1546,7 +1469,7 @@ class Moteur {
             }else{
                 //on suprime le texte entre le '<' et le '>'
                 $posCondiFin = strpos($exp, '>');
-                $exp = substr($exp, $posCondi, $posCondiFin-$posCondi);                        
+                $exp = substr($exp, 0, $posCondi).substr($exp, $posCondiFin+1);                        
             }
         }
 
@@ -1562,6 +1485,7 @@ class Moteur {
             $fin = strlen($gen)+$deb;
             if($deb>$posi){
                 $txt = substr($exp, $posi, $deb-$posi);
+                $arrFlux[]=array('deb'=>$posi,'fin'=>$deb,'txt'=>$txt);                
             }
             //décompose le générateur
             $genCompo = $this->getGenCompo($arrGen[1][$i]);
