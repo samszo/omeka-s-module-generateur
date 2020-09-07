@@ -30,6 +30,11 @@ genex:Generateur
   skos:definition "Forme générative."@fr ;
   a owl:Class .
 
+genex:GenSparql
+  rdfs:label "Générateur SPARQL"@fr ;
+  skos:definition "Forme sparql générative."@fr ;
+  a owl:Class .
+
 genex:Generation
   rdfs:label "Génération"@fr ;
   skos:definition "Instantiotion d'une forme générative."@fr ;
@@ -131,3 +136,24 @@ genex:hasFlux a rdf:Property ;
     rdfs:label "A comme flux"@fr ;
     rdfs:comment "Utiliser pour enregistrer les flux générés."@fr ;
     rdfs:domain o:Resource .
+
+genex:hasRefIeml a rdf:Property ;
+    rdfs:label "A comme référence IEML"@fr ;
+    rdfs:comment "Utiliser pour définir un lien vers IEML."@fr .    
+
+genex:hasRefWikidata a rdf:Property ;
+    rdfs:label "A comme référence Wikidata"@fr ;
+    rdfs:comment "Utiliser pour définir un lien vers Wikidata."@fr .        
+
+genex:hasSynonyme a rdf:Property ;
+    rdfs:label "A comme synonyme"@fr ;
+    owl:sameAs lexinfo:synonym ;    
+    rdfs:comment "Utiliser pour définir des synonymes."@fr .        
+
+genex:sparqlQuery a rdf:Property ;
+    rdfs:label "Requête SPARQL"@fr ;
+    rdfs:comment "Utiliser pour générer des items à partir d'une requête SPARL."@fr .        
+
+genex:sparqlEndpoint a rdf:Property ;
+    rdfs:label "Endpoint SPARQL"@fr ;
+    rdfs:comment "Adresse d'un service SPARQL."@fr .            

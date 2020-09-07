@@ -1,5 +1,5 @@
 {
-    "o:label": "genex_Concept",
+    "o:label": "genex_GenSparql",
     "o:resource_template_property": [
         {
             "o:alternate_label": null,
@@ -20,30 +20,18 @@
             "o:is_private": false,
             "data_type_name": null,
             "data_type_label": null,
-            "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/ieml#",
-            "vocabulary_label": "IEML",
-            "local_name": "Desc",
-            "label": "Description"
+            "vocabulary_namespace_uri": "http:\/\/purl.org\/dc\/terms\/",
+            "vocabulary_label": "Dublin Core",
+            "local_name": "isReferencedBy",
+            "label": "Is Referenced By"
         },
         {
             "o:alternate_label": null,
             "o:alternate_comment": null,
             "o:is_required": false,
             "o:is_private": false,
-            "data_type_name": "valuesuggest:crisco:synonymes",
-            "data_type_label": "Crisco: Dictionnaire Electronique des Synonymes (DES)",
-            "vocabulary_namespace_uri": "http:\/\/www.lexinfo.net\/ontology\/3.0\/lexinfo#",
-            "vocabulary_label": "LexInfo",
-            "local_name": "synonym",
-            "label": "synonym"
-        },
-        {
-            "o:alternate_label": null,
-            "o:alternate_comment": null,
-            "o:is_required": false,
-            "o:is_private": false,
-            "data_type_name": "valuesuggest:ieml:label",
-            "data_type_label": "IEML : Information Economy Meta-Language",
+            "data_type_name": null,
+            "data_type_label": null,
             "vocabulary_namespace_uri": "http:\/\/purl.org\/dc\/terms\/",
             "vocabulary_label": "Dublin Core",
             "local_name": "description",
@@ -58,8 +46,8 @@
             "data_type_label": null,
             "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
             "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
-            "local_name": "hasTerm",
-            "label": "A comme terme"
+            "local_name": "sparqlQuery",
+            "label": "Requ\u00eate SPARQL"
         },
         {
             "o:alternate_label": null,
@@ -70,8 +58,8 @@
             "data_type_label": null,
             "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
             "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
-            "local_name": "hasGenerateur",
-            "label": "A comme g\u00e9n\u00e9rateur"
+            "local_name": "sparqlEndpoint",
+            "label": "Endpoint SPARQL"
         },
         {
             "o:alternate_label": null,
@@ -82,26 +70,14 @@
             "data_type_label": null,
             "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
             "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
-            "local_name": "isCaract",
-            "label": "Est un caract\u00e8re"
-        },
-        {
-            "o:alternate_label": null,
-            "o:alternate_comment": null,
-            "o:is_required": false,
-            "o:is_private": false,
-            "data_type_name": null,
-            "data_type_label": null,
-            "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
-            "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
-            "local_name": "hasType",
-            "label": "A comme type"
+            "local_name": "hasConcept",
+            "label": "A comme concept"
         }
     ],
     "o:resource_class": {
         "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
         "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
-        "local_name": "Concept",
-        "label": "Concept"
+        "local_name": "GenSparql",
+        "label": "G\u00e9n\u00e9rateur SPARQL"
     }
 }

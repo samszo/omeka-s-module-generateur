@@ -17,6 +17,7 @@ use Zend\View\Model\ViewModel;
 
 class GenerationController extends AbstractActionController
 {
+  
     public function searchAction()
     {
         $view = new ViewModel;
@@ -167,8 +168,11 @@ class GenerationController extends AbstractActionController
 
         //generate data
         $cache = boolval($data['bCache']);
-        $g = new Moteur($api,$cache,$this);
-        $g->generate($data);
+        $g = new Moteur($cache,$this);
+        if(isset($data['submitStructure']))
+            $g->structure($data);
+        else
+            $g->generate($data);
 
         //$oItem = $api->read('items', $data['o:resource']['o:id'])->getContent();
         //$gReseau = $g->getConceptReseau($oItem);

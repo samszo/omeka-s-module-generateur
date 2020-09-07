@@ -10,6 +10,7 @@ namespace Generateur\Generateur;
 
 use Omeka\Api\Exception\RuntimeException;
 use Zend\Cache\StorageFactory;
+use Zend\Http\Client;
 
 class Moteur {
 
@@ -72,13 +73,14 @@ class Moteur {
         'bibo'          => 'http://purl.org/ontology/bibo/',
         'lexinfo'       => 'http://www.lexinfo.net/ontology/3.0/lexinfo#',
         'genex'         => 'https://jardindesconnaissances.univ-paris8.fr/onto/genex#',
+        'foaf'          => 'http://xmlns.com/foaf/0.1/',
     ];
     /**
      * Resource template to cache.
      *
      * @var array
      */
-    protected $resourcesTemplates = ["genex_Concept","genex_Conjugaison","genex_Generateur","genex_Term"];
+    protected $resourcesTemplates = ["genex_Concept","genex_Conjugaison","genex_Generateur","genex_Term","genex_GenSparql"];
     /**
      * Cache of selected Omeka resource classes
      *
@@ -138,7 +140,7 @@ class Moteur {
     var $ordre = 0;
     var $segment = 0;
     var $niv=0;
-    var $maxNiv = 10;
+    var $maxNiv = 20;
 	var $timeDeb;
     var $timeMax = 1000;
     var $texte = "";
@@ -151,15 +153,23 @@ class Moteur {
     var $defautGenre = 1;   
 
     /**
+     * variable de structuration
+     */
+    const ENDPOINT_WIKIDATA = 'https://query.wikidata.org/sparql';
+    /**
+     * @var Client
+     */
+    protected $client;
+
+    /**
      * Construct Moteur
      *
-     * @param object     $api The api for communicate with omeka
      * @param boolean   $bCache active le cache
-     * @param object    $c controller pour gérer : les logs
+     * @param object    $c controller pour gérer : les services
      */
-    public function __construct($api, $bCache=true, $c)
+    public function __construct($bCache=true, $c)
     {
-        $this->api = $api;
+        $this->api = $c->api();
         $this->cacheResourceClasses();
         $this->cacheResourceTemplate();
         $this->cacheProperties();
@@ -167,8 +177,278 @@ class Moteur {
         $this->bCache = $bCache;
         $this->initCache();
         $this->c = $c;
+        //TODO récupérer les services par l'item->getServiceLocator()->get('Config') par exemple tempDir
+
 
     }
+
+    /**
+     * Structure des générateur à partir du texte et des références
+     *
+     * @param array             $data The data source of generate
+     * 
+     * @return array
+     */
+    public function structure($data)
+    {
+        $oItem = $this->api->read('items', $data['o:resource']['o:id'])->getContent();
+        $this->client = new Client();                
+
+        //traitement suivant les références
+        $refs = $oItem->value('genex:hasRefWikidata',['all' => true]);        
+        if($refs){
+            foreach ($refs as $ref) { 
+                if($ref->type()=='uri'){
+                    $wikidata =  $this->getJson($ref->uri(),['format'=>'json']);
+                    foreach ($wikidata['entities'] as $k => $v) {
+                        //traitement suivant le type
+                        switch ($v["type"]) {
+                            case "lexeme":
+                                # creation du term associé
+                                $this->createTermFromLexeme($v, $oItem);
+                                break;
+                            case "item":
+                                //creation d'un générateur sparql pour l'usage du concept
+                                $query = 'SELECT ?item ?itemLabel ?image (MD5(CONCAT(str(?item),str(RAND()))) as ?random)
+                                WHERE 
+                                {
+                                  ?item wdt:P31 wd:'.$v['title'].'.
+                                  ?item wdt:P18 ?image.
+                                  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+                                }
+                                ORDER BY ?random        
+                                LIMIT 1';
+                                $this->createGenSparql($oItem, 'usage', self::ENDPOINT_WIKIDATA, $query);
+                                break;
+                            }    
+                    }
+                }                
+            }    
+        }
+    }
+
+    /**
+     * récupère le json d'une requête http
+     *
+    * @param string             $uri
+     * @param array             $params
+     * 
+     * @return array
+     */
+    public function getJson($uri, $params)
+    {
+        $client = $this->client->setUri($uri)->setParameterGet($params);
+        $response = $client->send();
+        if (!$response->isSuccess()) {
+            return [];
+        }
+        return json_decode($response->getBody(), true);
+    }
+
+
+    /**
+     * Creation d'un générateur sparql
+     *
+     * @param object    $oItem item à générer
+     * @param string    $titre
+     * @param string    $endPoint
+     * @param string    $query
+     * 
+     * @return o:item
+     */
+    public function createGenSparql($oObject, $titre, $endPoint, $query)
+    {
+
+        //vérifie la présence de l'item pour gérer la création
+        $param = array();
+        $param['property'][0]['property']= $this->properties["genex"]["sparqlQuery"]->id()."";
+        $param['property'][0]['type']='eq';
+        $param['property'][0]['text']=$query; 
+        $result = $this->api->search('items',$param)->getContent();
+        if(count($result)){
+            return $result[0];
+        }          
+
+        $oItem = [];
+        $oItem['o:resource_class'] = ['o:id' => $this->resourceClasses['genex']['Generateur']->id()];
+        $oItem['o:resource_template'] = ['o:id' => $this->resourceTemplate['genex_GenSparql']->id()];
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["genex"]["sparqlEndpoint"]->id();
+        $valueObject['@id'] = $endPoint;
+        $valueObject['type'] = 'uri';
+        $oItem[$this->properties["genex"]["sparqlEndpoint"]->term()][] = $valueObject;
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["genex"]["hasConcept"]->id();
+        $valueObject['value_resource_id'] = $oObject->id();
+        $valueObject['type'] = 'resource';
+        $oItem[$this->properties["genex"]["hasConcept"]->term()][] = $valueObject;
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["genex"]["sparqlQuery"]->id();
+        $valueObject['@value'] = $query;
+        $valueObject['type'] = 'literal';
+        $oItem[$this->properties["genex"]["sparqlQuery"]->term()][] = $valueObject;
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["dcterms"]["title"]->id();
+        $valueObject['@value'] = uniqid('genSparql-'.$titre.'-');
+        $valueObject['type'] = 'literal';
+        $oItem[$this->properties["dcterms"]["title"]->term()][] = $valueObject;
+       
+
+        $result = $this->api->create('items', $oItem);        
+        return $result ? $result->getContent() : false;
+
+    }
+
+    /**
+     * Creation d'un term à partir d'un lexeme
+     *
+     * @param array     $lex lexeme à créer
+     * @param o:item    $oItemConcept
+     * 
+     * @return o:item
+     */
+    public function createTermFromLexeme($lex, $oItemConcept)
+    {
+
+        $id = "https://www.wikidata.org/wiki/".$lex['title'];
+
+        //vérifie la présence de l'item pour gérer la création
+        $param = array();
+        $param['property'][0]['property']= $this->properties["dcterms"]["isReferencedBy"]->id()."";
+        $param['property'][0]['type']='eq';
+        $param['property'][0]['text']=$id; 
+        $result = $this->api->search('items',$param)->getContent();
+        if(count($result)){
+            return $result[0];
+        }          
+
+        $oItem = [];
+        $oItem['o:resource_class'] = ['o:id' => $this->resourceClasses['genex']['Term']->id()];
+        $oItem['o:resource_template'] = ['o:id' => $this->resourceTemplate['genex_Term']->id()];
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["dcterms"]["isReferencedBy"]->id();
+        $valueObject['@id'] = $id;
+        $valueObject['type'] = 'uri';
+        $oItem[$this->properties["dcterms"]["isReferencedBy"]->term()][] = $valueObject;
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["genex"]["hasConcept"]->id();
+        $valueObject['value_resource_id'] = $oItemConcept->id();
+        $valueObject['type'] = 'resource';
+        $oItem[$this->properties["genex"]["hasConcept"]->term()][] = $valueObject;
+        $valueObject = [];
+        $valueObject['property_id'] = $this->properties["genex"]["hasType"]->id();
+        $valueObject['@value'] = $lex['lexicalCategory'];
+        $valueObject['type'] = 'literal';
+        $oItem[$this->properties["genex"]["hasType"]->term()][] = $valueObject;
+        foreach ($lex['lemmas'] as $l) {
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["dcterms"]["title"]->id();
+            $valueObject['@value'] = $l['value'];
+            $valueObject['@language']= $l['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["dcterms"]["title"]->term()][] = $valueObject;
+        }
+
+
+        foreach ($lex['claims'] as $k => $c) {
+            switch ($k) {
+                case 'P5185':
+                    foreach ($c as $v) {
+                        $genre = $v["mainsnak"]["datavalue"]["value"]["id"];
+                        $valueObject = [];
+                        $valueObject['property_id'] = $this->properties["lexinfo"]["gender"]->id();
+                        $valueObject['@value'] = $genre == "Q499327" ? "1" : "2";
+                        $valueObject['type'] = 'literal';
+                        $oItem[$this->properties["lexinfo"]["gender"]->term()][] = $valueObject;
+                    }
+                break;                
+                default:
+                    $this->c->logger()->info(__METHOD__.'claims of ='.$oItemConcept->id(),$c);
+                    break;
+            }
+        }
+        //creation du tableau des valeurs pour ordonner la création : féminin en premier    
+        $forms = [];
+        foreach ($lex['forms'] as $form) {
+            $m = intval(in_array("Q499327", $form['grammaticalFeatures']));
+            $f = intval(in_array("Q1775415", $form['grammaticalFeatures']));
+            $s = intval(in_array("Q110786", $form['grammaticalFeatures']));
+            $p = intval(in_array("Q146786", $form['grammaticalFeatures']));
+            foreach ($form['representations'] as $r) {
+                $forms[$m.'-'.$f.'-'.$s.'-'.$p] = $r;
+            }
+        }
+        if(count($forms)==2 && isset($forms['0-0-1-0'])){
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["singularNumberForm"]->id();
+            $valueObject['@value'] = $forms['0-0-1-0']['value'];
+            $valueObject['@language']= $forms['0-0-1-0']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["singularNumberForm"]->term()][] = $valueObject;    
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["pluralNumberForm"]->id();
+            $valueObject['@value'] = $forms['0-0-0-1']['value'];
+            $valueObject['@language']= $forms['0-0-0-1']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["pluralNumberForm"]->term()][] = $valueObject;                                                
+        }
+        if(count($forms)==2 && isset($forms['1-0-1-0'])){
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["singularNumberForm"]->id();
+            $valueObject['@value'] = $forms['1-0-1-0']['value'];
+            $valueObject['@language']= $forms['1-0-1-0']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["singularNumberForm"]->term()][] = $valueObject;    
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["pluralNumberForm"]->id();
+            $valueObject['@value'] = $forms['1-0-0-1']['value'];
+            $valueObject['@language']= $forms['1-0-0-1']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["pluralNumberForm"]->term()][] = $valueObject;                                                
+        }
+        if(count($forms)==4){
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["singularNumberForm"]->id();
+            $valueObject['@value'] = $forms['0-1-1-0']['value'];
+            $valueObject['@language']= $forms['0-1-1-0']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["singularNumberForm"]->term()][] = $valueObject;    
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["singularNumberForm"]->id();
+            $valueObject['@value'] = $forms['1-0-1-0']['value'];
+            $valueObject['@language']= $forms['1-0-1-0']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["singularNumberForm"]->term()][] = $valueObject;    
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["pluralNumberForm"]->id();
+            $valueObject['@value'] = $forms['0-1-0-1']['value'];
+            $valueObject['@language']= $forms['0-1-0-1']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["pluralNumberForm"]->term()][] = $valueObject;                                                
+            $valueObject = [];
+            $valueObject['property_id'] = $this->properties["lexinfo"]["pluralNumberForm"]->id();
+            $valueObject['@value'] = $forms['1-0-0-1']['value'];
+            $valueObject['@language']= $forms['1-0-0-1']['language'];
+            $valueObject['type'] = 'literal';
+            $oItem[$this->properties["lexinfo"]["pluralNumberForm"]->term()][] = $valueObject;                                                
+        }
+
+        foreach ($lex['senses'] as $s) {
+            foreach ($s['glosses'] as $g) {
+                $valueObject = [];
+                $valueObject['property_id'] = $this->properties["dcterms"]["description"]->id();
+                $valueObject['@value'] = $g['value'];
+                $valueObject['@language']= $g['language'];
+                $valueObject['type'] = 'literal';
+                $oItem[$this->properties["dcterms"]["description"]->term()][] = $valueObject;                                                
+            }
+        }            
+
+        $result = $this->api->create('items', $oItem);        
+        return $result ? $result->getContent() : false;
+
+    }
+
 
     /**
      * The generate with data
@@ -191,8 +471,8 @@ class Moteur {
             $this->timeDeb = microtime(true);
             $oItem = $this->api->read('items', $this->data['o:resource']['o:id'])->getContent();
         }
-        $rc  = $oItem->resourceClass()->term();    
         $this->c->logger()->info(__METHOD__.' item id ='.$oItem->id());
+        $rc = $oItem->resourceClass() ? $oItem->resourceClass()->term() : false;    
 
         $this->arrFlux[$this->ordre]["niveau"] = $niveau;
         $this->arrFlux[$this->ordre]["item"] = $oItem;
@@ -200,6 +480,8 @@ class Moteur {
 
         //generates according to class
         switch ($rc) {
+            case "genex:GenSparql":
+                $this->genSparql($oItem, $niveau);
             case "genex:Generateur":
                 //if($first)$this->ordre ++;                
                 $this->genGen($oItem, $niveau);
@@ -242,7 +524,7 @@ class Moteur {
 			$texte = "";
 			if(isset($this->arrFlux[$i])){
 				$arr = $this->arrFlux[$i];
-				if(isset($arr["txt"])){					
+				if(isset($arr["txt"])){					                    
                     $this->texte .= str_replace("%",$this->finLigne,$arr["txt"]);
 				}elseif(isset($arr["ERREUR"]) && $this->showErr){
 					$this->texte .= '<ul><font color="#de1f1f" >ERREUR:'.$arr["ERREUR"].'</font></ul>';	
@@ -272,7 +554,10 @@ class Moteur {
      */
 	function nettoyer(){
 
-		//gestion des espace en trop
+        $this->texte = str_replace("<","",$this->texte);        
+        $this->texte = str_replace(">","",$this->texte);        
+
+        //gestion des espace en trop
 		//$this->texte = preg_replace('/\s\s+/', ' ', $this->texte); //problème avec à qui devient illisible ???
 		$this->texte = str_replace("  "," ",$this->texte);
 		$this->texte = str_replace("  "," ",$this->texte);
@@ -291,7 +576,7 @@ class Moteur {
 		$this->texte = str_replace(" -","-",$this->texte);
 		$this->texte = str_replace("- ","-",$this->texte);
 		$this->texte = str_replace("( ","(",$this->texte);
-		$this->texte = str_replace(" )",")",$this->texte);
+        $this->texte = str_replace(" )",")",$this->texte);
 
     }
 
@@ -399,8 +684,8 @@ class Moteur {
         if($arr['prefixConj']){
             $prefix = "";
             $vPrefix = $arr['item']->value('genex:hasPrefix',['lang' => $this->lang,'all'=>true]);
-            if(count($vPrefix)==2) $prefix = $vPrefix[1]->asHtml();
-            else $prefix = $vPrefix[0]->asHtml();
+            if(count($vPrefix)==2) $prefix = $vPrefix[1]->__toString();
+            else $prefix = $vPrefix[0]->__toString();
             $centre = $prefix.$arr['terminaison'];
         }else
             $centre = $arr['terminaison'];
@@ -411,9 +696,9 @@ class Moteur {
         $verbe="";
 
         if(isset($arr['prodem'])){
-            $prodem['lib'] = $arr['prodem']->value('genex:hasPrefix') ? $arr['prodem']->value('genex:hasPrefix',['lang' => $this->lang])->asHtml() : "";
-            $prodem['lib_eli'] = $arr['prodem']->value('genex:hasElision') ? $arr['prodem']->value('genex:hasElision',['lang' => $this->lang])->asHtml() : "";
-            $prodem['num'] = $arr['prodem']->value('dcterms:description') ? $arr['prodem']->value('dcterms:description',['lang' => $this->lang])->asHtml() : "";
+            $prodem['lib'] = $arr['prodem']->value('genex:hasPrefix') ? $arr['prodem']->value('genex:hasPrefix',['lang' => $this->lang])->__toString() : "";
+            $prodem['lib_eli'] = $arr['prodem']->value('genex:hasElision') ? $arr['prodem']->value('genex:hasElision',['lang' => $this->lang])->__toString() : "";
+            $prodem['num'] = $arr['prodem']->value('dcterms:description') ? $arr['prodem']->value('dcterms:description',['lang' => $this->lang])->__toString() : "";
             $prodem['num'] = str_replace('complement','',$prodem['num']);
         }
 
@@ -520,8 +805,8 @@ class Moteur {
 				}
 			}	
 			if($arr["prosuj"]!=""){
-                $lib = $arr['prosuj']->value('genex:hasPrefix') ? $arr['prosuj']->value('genex:hasPrefix',['lang' => $this->lang])->asHtml() : "";
-                $lib_eli = $arr['prosuj']->value('genex:hasElision') ? $arr['prosuj']->value('genex:hasElision',['lang' => $this->lang])->asHtml() : "";
+                $lib = $arr['prosuj']->value('genex:hasPrefix') ? $arr['prosuj']->value('genex:hasPrefix',['lang' => $this->lang])->__toString() : "";
+                $lib_eli = $arr['prosuj']->value('genex:hasElision') ? $arr['prosuj']->value('genex:hasElision',['lang' => $this->lang])->__toString() : "";
 				if($this->isEli($verbe)){
 					//vérification de l'apostrophe
 					if (strrpos($lib_eli, "'") === false) { 
@@ -646,8 +931,8 @@ class Moteur {
         }else
             $oItem = $this->api->read('items', $id)->getContent();
 
-        $term = $oItem->value($personne,['lang' => $this->lang, 'all'=>true])[$nombre];
-        return $term->asHtml();            
+        $term = $oItem->value($personne,['lang' => $this->lang, 'all'=>true])[$nombre]->__toString();
+        return $term == "---" ? "" : $term;            
 
     }
 
@@ -685,7 +970,7 @@ class Moteur {
                 $vecteur = $this->getVecteur('genre');
                 $p = $numP==7 ? 'lexinfo:pluralNumberForm' : 'lexinfo:singularNumberForm';
                 $lib = $arr['prosuj']->value($p,['all'=>true]);
-                $arr["prosujlib"] = $lib[$vecteur['genre']-1]->asHtml();        
+                $arr["prosujlib"] = $lib[$vecteur['genre']-1]->__toString();        
 			}elseif($numP==0){
                 //3eme personne du singulier
 				$arr["terminaison"] = 3;				
@@ -707,9 +992,9 @@ class Moteur {
 				$numPC = $arr["determinant_verbe"][3].$arr["determinant_verbe"][4];
                 $arr["prodem"] = $this->getGeneClass("Pronom","complement".$numPC);
                 if(isset($arr["vecteur"]['elision']))
-                    $prodem = $arr["prodem"]->value('genex:hasElision',['lang' => $this->lang])->asHtml();
+                    $prodem = $arr["prodem"]->value('genex:hasElision',['lang' => $this->lang])->__toString();
                 else
-                    $prodem = $arr["prodem"]->value('genex:hasPrefix',['lang' => $this->lang])->asHtml();
+                    $prodem = $arr["prodem"]->value('genex:hasPrefix',['lang' => $this->lang])->__toString();
 		        if(substr($prodem,0,1)== "["){
                     $pr = $this->getItemByClass($prodem);
                     $arr["prodem"] = $this->genConcept($pr,false);               
@@ -824,7 +1109,7 @@ class Moteur {
                 }
                 break;                                
             case "genex:Term":
-                $prefix = $oItem->value('genex:hasPrefix',['lang' => $this->lang])->asHtml();
+                $prefix = $oItem->value('genex:hasPrefix',['lang' => $this->lang]) ? $oItem->value('genex:hasPrefix',['lang' => $this->lang])->__toString() : "";
                 //gestion des chaine vide impossible dans omeka s
                 if($prefix=='---')$prefix='';
                 $txt=$prefix;
@@ -841,19 +1126,27 @@ class Moteur {
                             : $oItem->value('lexinfo:singularNumberForm',['lang' => $this->lang, 'all' => true]);
                         if(is_array($term) && count($term)==2){
                             $term = isset($item["vecteur"]['genre'])
-                                && $item["vecteur"]['genre']=="2" ? $term[0]->asHtml() : $term[1]->asHtml();
+                                && $item["vecteur"]['genre']=="2" ? $term[0]->__toString() : $term[1]->__toString();
                         }else
-                            $term = $term ? $term[0]->asHtml() : "";
+                            $term = $term ? $term[0]->__toString() : "";
+
                         //si la terminaison est vide 
-                        //on vérifie s'il faut chercher la terminaison du verbe à l'infinitif
                         if($term==""){
+                            //vérifie si le term à une conjugaison
                             $oConj = $this->getIdConjugaison($item, true);
                             if($oConj){
-                                $term = $this->getTerminaison($oConj->id(),'infinitif',$this->personnes[1][0],$this->personnes[1][1]);
-                                $hasprefix = $oConj->value('genex:hasPrefix') ? boolval($oConj->value('genex:hasPrefix')->asHtml()) : true;
-                                $prefix = $hasprefix ? $prefix : "";
+                                if(!isset($item['txtDeterminant'])){
+                                    //on prend l'infinitif
+                                    $term = $this->getTerminaison($oConj->id(),'infinitif',$this->personnes[1][0],$this->personnes[1][1]);
+                                }else{
+                                    //on prend la troisième personne du singulier au présent de l'indicatif
+                                    $term = $this->getTerminaison($oConj->id(),'indicatif présent',$this->personnes[3][0],$this->personnes[3][1]);
+                                }                                
+                                $hasprefix = $oConj->value('genex:hasPrefix') ? boolval($oConj->value('genex:hasPrefix')->__toString()) : true;
+                                $prefix = $hasprefix ? $prefix : "";    
                             }   
                         }
+    
                         //construction du texte
                         $txt = $item['txtDeterminant'].$prefix.$term;    
                 }
@@ -875,11 +1168,15 @@ class Moteur {
      */
 	function setVecteurTerm($oItem, $niveau){
 
-        //si le term n'a pas de genre : il n'y a pas de vecteur
-        //if(!$oItem->value('lexinfo:gender')) return;
+        //si le term n'a pas de genre ni de forme pluriel et singulier ni de conjugaison
+        // = syntagme => il n'y a pas de vecteur
+        if(!$oItem->value('lexinfo:gender') 
+            && !$oItem->value('lexinfo:pluralNumberForm') 
+            && !$oItem->value('lexinfo:pluralNumberForm')
+            && !$oItem->value('genex:hasConjugaison')) return;
 
         //si le term a un déterminant de verbe : pas de vecteur
-        if(isset($this->arrFlux[$this->ordre]["determinant_verbe"])) return;
+        //if(isset($this->arrFlux[$this->ordre]["determinant_verbe"])) return;
         
         //ajoute les vecteurs
         $elision = $oItem->value('genex:hasElision',['lang' => $this->lang]) ? $oItem->value('genex:hasElision',['lang' => $this->lang])->asHtml() : "0";//pas d'élision par défaut
@@ -911,6 +1208,18 @@ class Moteur {
             }
             if(isset($this->arrFlux[$ordreNiveauBase]["determinant_verbe"])){
                 $this->arrFlux[$this->ordre]["determinant_verbe"] = $this->arrFlux[$ordreNiveauBase]["determinant_verbe"];    
+                //récupère le premier vecteur précédent
+                for($i = $this->ordre-1; $i >= 0; $i--){
+                    if(isset($this->arrFlux[$i]["vecteur"])){
+                        //transmet le pluriel et le genre
+                        $this->arrFlux[$this->ordre]["vecteur"] = [
+                            "pluriel"=> isset($this->arrFlux[$i]["vecteur"]["pluriel"]) ? $this->arrFlux[$i]["vecteur"]["pluriel"] : 0,
+                            "genre"=> isset($this->arrFlux[$i]["vecteur"]["genre"]) ? $this->arrFlux[$i]["vecteur"]["genre"] : $this->defautGenre,
+                        ];
+                        $i=-1;
+                    }
+                }
+    
             }
         }
 
@@ -1025,6 +1334,15 @@ class Moteur {
                 $valueObject['type'] = 'literal';
                 $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
             }
+            if(isset($f['img'])){
+                $valueObject = [];
+                $valueObject['property_id'] = $this->properties['foaf']['img']->id();
+                $valueObject['@id'] = $f['img'];
+                $valueObject['type'] = 'uri';
+                $this->data[$this->properties['foaf']['img']->term()][] = $valueObject;                    
+            }
+
+
             if(isset($f['vecteur'])){
                 $vecteur = 'vecteur : ';
                 foreach ($f['vecteur'] as $k => $v) {
@@ -1133,6 +1451,43 @@ class Moteur {
         return $ids;
     }
 
+    /**
+     * génération à partir d'une requête sparql
+     *
+     * @param o:Item    $oItem The item of generate
+     * @param integer   $niveau profondeur de la génération
+     * @return array
+     */
+    public function genSparql($oItem, $niveau)
+    {
+        if(!isset($this->client)) $this->client = new Client();                
+        $ep = $oItem->value('genex:sparqlEndpoint')->uri();    
+        $q = $oItem->value('genex:sparqlQuery')->__toString();    
+        $this->arrFlux[$this->ordre]["query"] = $q;
+        $this->arrFlux[$this->ordre]["endpoint"] = $ep;
+        $this->c->logger()->info(__METHOD__.' '.$oItem->id().' => '.$ep.' = '.$q);
+
+        $client = $this->client->setUri($ep)->setParameterGet([
+            'output' => 'json',
+            'query' => $q,
+        ]);
+        $client->setHeaders(array(
+          'Accept' => 'application/sparql-results+json',
+         ));
+        $response = $client->send();
+        if (!$response->isSuccess()) {
+            return [];
+        }
+
+        $results = json_decode($response->getBody(), true);
+        foreach ($results['results']['bindings'] as $result) {
+            $this->arrFlux[$this->ordre]["txt"] = $result['itemLabel']['value'];
+            $this->arrFlux[$this->ordre]["img"] = $result['image']['value'];
+        }
+
+        return $this->arrFlux;
+
+    }
 
     /**
      * génération à partir d'un générateur
@@ -1144,7 +1499,8 @@ class Moteur {
     public function genGen($oItem, $niveau)
     {   
 
-        $texte = $oItem->value('dcterms:description')->__toString();    
+        $texte = $oItem->value('dcterms:description') ? $oItem->value('dcterms:description')->__toString() : false;
+        if(!$texte) return [];    
         $this->arrFlux[$this->ordre]["gen"] = $texte;
         $this->c->logger()->info(__METHOD__.' '.$oItem->id().' = '.$texte);
 
@@ -1381,7 +1737,8 @@ class Moteur {
                 ['joiner'=>'and','property'=>$this->properties['dcterms']['description']->id(),'type'=>'eq','text'=>$class]
             ]];
             //TODO:trouver requête plus rapide pour éviter le cache ?
-            $items = $this->api->search('items',$query)->getContent();
+            //on ne retourne que l'id
+            $items = $this->api->search('items',$query,['returnScalar'=>'id'])->getContent();
             
             if(count($items)==0)
                 throw new RuntimeException("Impossible de récupérer le concept. Aucun '".$class."' n'a été trouvés");
@@ -1390,10 +1747,10 @@ class Moteur {
                 throw new RuntimeException("Impossible de récupérer le concept. Plusieurs items ont été trouvés");
             */
 
-            $oItem = $items[0];
-            $this->cache->setItem($c, $oItem->id());
-        }else
-            $oItem = $this->api->read('items', $id)->getContent();
+            $id = $items[0];
+            $this->cache->setItem($c, $id);
+        }
+        $oItem = $this->api->read('items', $id)->getContent();
 
         return $oItem;
     }
@@ -1526,6 +1883,7 @@ class Moteur {
             'adapter' => [
                 'name'    => 'filesystem',
                 'options' => array('ttl' => 31536000, 'cache_dir' => __DIR__.'/cache/')
+                //this->serviceLocator
                 //'options' => array('ttl' => 1800)
             ],
 

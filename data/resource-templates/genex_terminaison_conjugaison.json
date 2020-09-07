@@ -1,0 +1,95 @@
+{
+    "o:label": "genex_terminaison_conjugaison",
+    "o:resource_template_property": [
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/purl.org\/dc\/terms\/",
+            "vocabulary_label": "Dublin Core",
+            "local_name": "title",
+            "label": "Title"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/www.lexinfo.net\/ontology\/3.0\/lexinfo#",
+            "vocabulary_label": "LexInfo",
+            "local_name": "mood",
+            "label": "mood"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
+            "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
+            "local_name": "hasConjugaison",
+            "label": "A comme conjugaison"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": "premi\u00e8re valeur = singulier\r\ndeuxi\u00e8me valeur = pluriel\r\n",
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/www.lexinfo.net\/ontology\/3.0\/lexinfo#",
+            "vocabulary_label": "LexInfo",
+            "local_name": "firstPersonForm",
+            "label": "firstPersonForm"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": "premi\u00e8re valeur = singulier\r\ndeuxi\u00e8me valeur = pluriel",
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/www.lexinfo.net\/ontology\/3.0\/lexinfo#",
+            "vocabulary_label": "LexInfo",
+            "local_name": "secondPersonForm",
+            "label": "secondPersonForm"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": "premi\u00e8re valeur = singulier\r\ndeuxi\u00e8me valeur = pluriel",
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/www.lexinfo.net\/ontology\/3.0\/lexinfo#",
+            "vocabulary_label": "LexInfo",
+            "local_name": "thirdPersonForm",
+            "label": "thirdPersonForm"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/purl.org\/dc\/terms\/",
+            "vocabulary_label": "Dublin Core",
+            "local_name": "description",
+            "label": "Description"
+        }
+    ],
+    "o:resource_class": {
+        "vocabulary_namespace_uri": "https:\/\/jardindesconnaissances.univ-paris8.fr\/onto\/genex#",
+        "vocabulary_label": "G\u00e9n\u00e9rateur d'expressions",
+        "local_name": "ConjugaisonTempsTerms",
+        "label": "Terminaisons d'un temps de conjugaison"
+    }
+}
