@@ -166,9 +166,10 @@ class GenerationController extends AbstractActionController
         }        
         $data['o:resource_template']['o:id'] = $resourceTemplate->id();
 
+
         //generate data
         $cache = boolval($data['bCache']);
-        $g = new Moteur($cache,$this);
+        $g = new Moteur($cache,$this->api(),$this->logger());
         if(isset($data['submitStructure']))
             $g->structure($data);
         else

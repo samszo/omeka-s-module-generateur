@@ -29,12 +29,15 @@ return [
     'view_helpers' => [
         'invokables' => [
             'normalizeDateTimeQuery' => View\Helper\NormalizeDateTimeQuery::class,
+            'MoteurViewHelper' => View\Helper\MoteurViewHelper::class,
         ],
         'factories' => [
             'showGenerateurForm' => Service\ViewHelper\ShowGenerateurFormFactory::class,
             'generations' => Service\ViewHelper\GenerationsFactory::class,
+            'MoteurFactory' => Service\ViewHelper\MoteurFactory::class,
         ],
     ],
+
     'form_elements' => [
         'factories' => [
             Form\GenerateurForm::class => Service\Form\GenerateurFormFactory::class,

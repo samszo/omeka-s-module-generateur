@@ -9,6 +9,7 @@
 namespace Generateur\Generateur;
 
 use Omeka\Api\Exception\RuntimeException;
+use Omeka\Api\Exception\InvalidArgumentException;
 use Zend\Cache\StorageFactory;
 use Zend\Http\Client;
 
@@ -114,7 +115,7 @@ class Moteur {
      *
      * @var object
      */
-    protected $c;
+    protected $log;
     /**
      * Tableau du reseau
      *
@@ -126,13 +127,13 @@ class Moteur {
      *
      * @var Zend_Cache
      */
-    protected $cache;
+    var $cache;
     /**
      * Activation du Cache
      *
      * @var boolean
      */
-    protected $bCache;
+    var $bCache;
     /**
      * variable de generation
      */
@@ -165,22 +166,115 @@ class Moteur {
      * Construct Moteur
      *
      * @param boolean   $bCache active le cache
-     * @param object    $c controller pour gérer : les services
+     * @param object    $api controller pour gérer l'api
+     * @param object    $log controller pour gérer les log
+
      */
-    public function __construct($bCache=true, $c)
+    public function __construct($bCache=true, $api, $log=false)
     {
-        $this->api = $c->api();
+        $this->api = $api;
         $this->cacheResourceClasses();
         $this->cacheResourceTemplate();
         $this->cacheProperties();
         //TODO:trouver un autre moyen de gérer le cache
         $this->bCache = $bCache;
         $this->initCache();
-        $this->c = $c;
+        $this->log = $log;
         //TODO récupérer les services par l'item->getServiceLocator()->get('Config') par exemple tempDir
 
 
     }
+
+    /**
+     * génère une conjugaison
+     *
+     * @param int       $idItem identifiant de l'item
+     * @param string    $identifiant du verbe
+     * 
+     * @return array
+     */
+    public function getConjugaison($idItem, $identifiant="")
+    {
+        //initialise la génération 
+        $this->timeDeb = microtime(true);
+        $this->data = true;
+        $this->arrFlux[0]["niveau"]=0;
+
+        //récupère l'item
+        $oItem = $this->api->read('items', $idItem)->getContent();
+
+        //construction du flux génératif
+        $rc = $oItem->resourceClass() ? $oItem->resourceClass()->term() : false;    
+        switch ($rc) {
+            case "genex:Concept":
+                //récupère la description
+                $desc = $oItem->value('dcterms:description');
+                if(!$desc)
+                    throw new RuntimeException("L'item '".$oItem->displayTitle()."' (".$oItem->id().") ne pas être conjugais.");			
+                else
+                    $desc = $desc->__toString();
+                //génère le term
+                $gen = "[01100000|".$desc."]";
+                $arrFlux = $this->genGen($oItem,0,$gen)[1];
+                break;                                
+            case "genex:Term":
+                //récupère le term
+                $arrFlux = $this->setVecteurTerm($oItem,0);
+                $arrFlux['item'] = $oItem;
+                $arrFlux['rc'] = $rc;
+                $desc = "oItem".$oItem->id();
+                break;                                
+            default:
+                throw new RuntimeException("L'item '".$oItem->displayTitle()."' (".$oItem->id().") ne pas être conjugais.");			
+                break;
+        }
+        $arrFlux['niveau']=0;
+
+        //génère toutes les conjugaisons pour toutes les formes
+        /*
+		Position 1 : type de négation
+		Position 2 : temps verbal
+		Position 3 : pronoms sujets définis
+		Positions 4 ET 5 : pronoms compléments
+		Position 6 : ordre des pronoms sujets
+		Position 7 : pronoms indéfinis
+        Position 8 : Place du sujet dans la chaîne grammaticale
+        */
+        $result = [];
+        if(!$identifiant){
+            foreach ($this->temps as $tk => $t) {
+                //on exclu les conjugaison thérorique
+                if($tk <> 7){
+                    foreach ($this->personnes as $pk => $p) {
+                        $this->arrFlux=[];
+                        $dv = "0".$tk.$pk."00000";
+                        $arrFlux['determinant_verbe'] = $dv;
+                        $this->arrFlux=[$arrFlux];                
+                        $texte = $this->getTexte();
+                        $this->arrFlux[0]['recid']="[".$dv."|".$desc."]";                    
+                        $this->arrFlux[0]['item']=$this->arrFlux[0]['item']->id();
+                        $this->arrFlux[0]['prosuj']=$this->arrFlux[0]['prosuj']->id();
+                        $result[]=$this->arrFlux[0];
+                        //infinitif et participe présent n'ont qu'une seule personne
+                        if ($tk > 7) break;
+                    }    
+                }
+            }
+        }else{
+            $this->arrFlux=[];
+            $arrFlux['determinant_verbe'] = $identifiant;
+            $this->arrFlux=[$arrFlux];                
+            $texte = $this->getTexte();
+            $this->arrFlux[0]['recid']=$this->arrFlux[0]['item']->id();                    
+            $this->arrFlux[0]['item']=$this->arrFlux[0]['item']->id();
+            $this->arrFlux[0]['prosuj']=$this->arrFlux[0]['prosuj']->id();
+            $this->arrFlux[0]['gen']="[".$identifiant."|".$desc."]";
+            $result[]=$this->arrFlux[0];
+        }
+
+        return $result;
+    }
+
 
     /**
      * Structure des générateur à partir du texte et des références
@@ -363,7 +457,7 @@ class Moteur {
                     }
                 break;                
                 default:
-                    $this->c->logger()->info(__METHOD__.'claims of ='.$oItemConcept->id(),$c);
+                    if($this->log)$this->log->info(__METHOD__.'claims of ='.$oItemConcept->id(),$c);
                     break;
             }
         }
@@ -449,6 +543,36 @@ class Moteur {
 
     }
 
+    /**
+     * initialise la génération
+     *
+     */
+    public function initGenerate($data)
+    {   
+        $this->data = $data;
+        $this->arrFlux = array();
+        $this->ordre = 0;
+        $this->arrFlux[$this->ordre]["niveau"]=0;        
+        $this->segment = 0;    
+        $this->timeDeb = microtime(true);
+    }
+
+
+    /**
+     * The generate with item and determiannt
+     *
+     * @param array     $data The data source of generate
+     * 
+     * @return array
+     */
+    public function generateDeterminantItem($data)
+    {   
+        $this->initGenerate($data);
+        $oItem = $this->api->read('items', $this->data['o:resource']['o:id'])->getContent();
+        $this->genGen($oItem,0,$this->data['gen']);
+        $this->getTexte();
+    }
+
 
     /**
      * The generate with data
@@ -464,14 +588,10 @@ class Moteur {
         $first = false;
         if(!isset($this->data)){
             $first = true;
-            $this->data = $data;
-            $this->arrFlux = array();
-            $this->ordre = 0;
-            $this->segment = 0;    
-            $this->timeDeb = microtime(true);
+            $this->initGenerate($data);
             $oItem = $this->api->read('items', $this->data['o:resource']['o:id'])->getContent();
         }
-        $this->c->logger()->info(__METHOD__.' item id ='.$oItem->id());
+        if($this->log)$this->log->info(__METHOD__.' item id ='.$oItem->id());
         $rc = $oItem->resourceClass() ? $oItem->resourceClass()->term() : false;    
 
         $this->arrFlux[$this->ordre]["niveau"] = $niveau;
@@ -544,6 +664,7 @@ class Moteur {
 		//mise en forme du texte
 		$this->coupures();
 
+        return $this->texte;
 
     }
 
@@ -681,14 +802,18 @@ class Moteur {
 		$arr = $this->genereTerminaison($arr);
 		
         //construction du centre
+        $prefix = "";
         if($arr['prefixConj']){
-            $prefix = "";
             $vPrefix = $arr['item']->value('genex:hasPrefix',['lang' => $this->lang,'all'=>true]);
-            if(count($vPrefix)==2) $prefix = $vPrefix[1]->__toString();
+            if(!$vPrefix || !is_array($vPrefix)){
+                throw new InvalidArgumentException("Impossible de générer le verbe '".$arr['item']->displayTitle()."' (".$arr['item']->id().") pas de prefix défini.");			
+            }elseif(count($vPrefix)==2) $prefix = $vPrefix[1]->__toString();            
             else $prefix = $vPrefix[0]->__toString();
+            $prefix = $prefix == "0" ? "" : $prefix;  
             $centre = $prefix.$arr['terminaison'];
         }else
             $centre = $arr['terminaison'];
+        $arr['prefix']=$prefix;
 		
 		//construction de l'élision
 		$eli = $this->isEli($centre);
@@ -722,7 +847,7 @@ class Moteur {
 			/*gestion de l'infinitif 
 			 * 
 			 */
-			if($arr["determinant_verbe"][1]==9 || $arr["determinant_verbe"][1]==7){
+			if($arr["determinant_verbe"][1]==9 || $arr["determinant_verbe"][1]==7 || $arr["determinant_verbe"][1]==8){
 				$verbe = $centre;
 				if(isset($arr["prodem"])){
 					if($prodem["num"]!=39 && $prodem["num"]!=40 && $prodem["num"]!=41){
@@ -812,9 +937,11 @@ class Moteur {
 					if (strrpos($lib_eli, "'") === false) { 
 						$verbe = $lib_eli." ".$verbe; 
 					}else
-						$verbe = $lib_eli.$verbe; 
+                        $verbe = $lib_eli.$verbe; 
+                    $arr['sujet']=$lib_eli;
 				}else{
 					$verbe = $lib." ".$verbe; 
+                    $arr['sujet']=$lib_eli;
 				}
 			}	
 		}
@@ -875,7 +1002,7 @@ class Moteur {
 
         $conj = $arr['item']->value('genex:hasConjugaison',['all'=>true]);
         if(!$conj && !$bNull)
-            throw new RuntimeException("La conjugaison pour '".$arr['item']->displayTitle()."' n'a pas été trouvée.");			
+            throw new InvalidArgumentException("La conjugaison pour '".$arr['item']->displayTitle()."' (".$arr['item']->id().") n'a pas été trouvée.");			
         if(!$conj && $bNull)
             return false;			
 
@@ -887,7 +1014,7 @@ class Moteur {
             }                
         }
         if(!$idConj && !$bNull)
-            throw new RuntimeException("La conjugaison pour '".$arr['item']->displayTitle()."' n'a pas été trouvée.");			
+            throw new InvalidArgumentException("La conjugaison pour '".$arr['item']->displayTitle()."' (".$arr['item']->id().") n'a pas été trouvée.");			
         
         return $oConj;
 
@@ -931,7 +1058,12 @@ class Moteur {
         }else
             $oItem = $this->api->read('items', $id)->getContent();
 
-        $term = $oItem->value($personne,['lang' => $this->lang, 'all'=>true])[$nombre]->__toString();
+        $term = $oItem->value($personne,['lang' => $this->lang, 'all'=>true])[$nombre];
+        if(!$term)
+            throw new RuntimeException("Impossible de récupérer la terminaison ".$personne." ".$nombre." pour l'item '".$oItem->displayTitle()." : (".$oItem->id().").");
+        else
+            $term = $term->__toString();
+
         return $term == "---" ? "" : $term;            
 
     }
@@ -960,15 +1092,16 @@ class Moteur {
 			//pronom définie
 			$numP = $arr["determinant_verbe"][2];
 			$pr = "";
-			//définition des terminaisons et du pluriel
-			if($numP==6 || $numP==7){
-                $arr["terminaison"] = $numP==6 ? 3 : 6;				
+            //définition des terminaisons et du pluriel
+			if($numP==7){
+                //TODO : vérifier les accords en genre et nombre
+                $arr["terminaison"] = 6;				
 				//il/elle singulier pluriel
                 $pr = $this->getItemByClass("a_il");
                 $arr["prosuj"] = $this->genConcept($pr,false);
                 //récupère le pronom suivant le genre et le nombre
                 $vecteur = $this->getVecteur('genre');
-                $p = $numP==7 ? 'lexinfo:pluralNumberForm' : 'lexinfo:singularNumberForm';
+                $p = $numP==6 ? 'lexinfo:pluralNumberForm' : 'lexinfo:singularNumberForm';
                 $lib = $arr['prosuj']->value($p,['all'=>true]);
                 $arr["prosujlib"] = $lib[$vecteur['genre']-1]->__toString();        
 			}elseif($numP==0){
@@ -1064,7 +1197,7 @@ class Moteur {
         if(!isset($vecteur["genre"]))$vecteur["elision"]=$this->defautGenre;
         $oItem = $arr['determinant'];
 		if($vecteur){			
-            $this->c->logger()->info(__METHOD__.' '.$oItem->id(),$vecteur);
+            if($this->log)$this->log->info(__METHOD__.' '.$oItem->id(),$vecteur);
             if($vecteur['pluriel'])
                 $formDet = $oItem->value('lexinfo:pluralNumberForm',['lang' => $this->lang, 'all'=>true]);
             else
@@ -1099,10 +1232,16 @@ class Moteur {
 
         $oItem = $item['item'];
         $txt = "";
-        $this->c->logger()->info(__METHOD__.' '.$oItem->id());
+        if($this->log)$this->log->info(__METHOD__.' '.$oItem->id());
         //generates according to class
         switch ($item['rc']) {
             case "genex:Generateur":
+                if(isset($item["determinant"])){
+                    $item = $this->genereDeterminant($item);
+                    $txt = $item['txtDeterminant'];    
+                }
+                break;                                
+            case "genex:Concept":
                 if(isset($item["determinant"])){
                     $item = $this->genereDeterminant($item);
                     $txt = $item['txtDeterminant'];    
@@ -1114,7 +1253,7 @@ class Moteur {
                 if($prefix=='---')$prefix='';
                 $txt=$prefix;
                 if(isset($item['determinant_verbe'])){
-                        $item = $this->genereVerbe($item);
+                        $item = $this->genereVerbe($item);                        
                         $txt = $item['verbe'];
                 }elseif(isset($item["vecteur"])){
                         $item = $this->genereDeterminant($item);
@@ -1165,6 +1304,7 @@ class Moteur {
      * @param o:Item 	$oItem
      * @param integer   $niveau profondeur de la génération
      *
+     * return array
      */
 	function setVecteurTerm($oItem, $niveau){
 
@@ -1222,6 +1362,8 @@ class Moteur {
     
             }
         }
+
+        return $this->arrFlux[$this->ordre];
 
     }
 
@@ -1382,6 +1524,8 @@ class Moteur {
         //récupère les possibilités
         $possis = $this->getPossis($oItem);
         
+        if(!$possis) throw new RuntimeException("Le concept '".$oItem->displayTitle()."' (".$oItem->id().") n'a pas de possibilité.");			
+
         //vérifie si on traite un caract
         $isCaract = $oItem->value('genex:isCaract') ? $oItem->value('genex:isCaract')->asHtml() : false;
         if($isCaract){
@@ -1460,12 +1604,15 @@ class Moteur {
      */
     public function genSparql($oItem, $niveau)
     {
-        if(!isset($this->client)) $this->client = new Client();                
+        if(!isset($this->client)) $this->client = new Client();
+        $this->client->setConfig(array(
+            'timeout'      => 30
+        ));                        
         $ep = $oItem->value('genex:sparqlEndpoint')->uri();    
         $q = $oItem->value('genex:sparqlQuery')->__toString();    
         $this->arrFlux[$this->ordre]["query"] = $q;
         $this->arrFlux[$this->ordre]["endpoint"] = $ep;
-        $this->c->logger()->info(__METHOD__.' '.$oItem->id().' => '.$ep.' = '.$q);
+        if($this->log)$this->log->info(__METHOD__.' '.$oItem->id().' => '.$ep.' = '.$q);
 
         $client = $this->client->setUri($ep)->setParameterGet([
             'output' => 'json',
@@ -1494,15 +1641,17 @@ class Moteur {
      *
      * @param o:Item    $oItem The item of generate
      * @param integer   $niveau profondeur de la génération
+     * @param string    $texte séquence générative  
+     * 
      * @return array
      */
-    public function genGen($oItem, $niveau)
+    public function genGen($oItem, $niveau, $texte="")
     {   
-
-        $texte = $oItem->value('dcterms:description') ? $oItem->value('dcterms:description')->__toString() : false;
+        if(!$texte)
+            $texte = $oItem->value('dcterms:description') ? $oItem->value('dcterms:description')->__toString() : false;
         if(!$texte) return [];    
         $this->arrFlux[$this->ordre]["gen"] = $texte;
-        $this->c->logger()->info(__METHOD__.' '.$oItem->id().' = '.$texte);
+        if($this->log)$this->log->info(__METHOD__.' '.$oItem->id().' = '.$texte);
 
         if($this->arrFlux[$this->ordre]["niveau"] > $this->maxNiv){
             $erreur = "problème de boucle trop longue : ";
@@ -1618,7 +1767,7 @@ class Moteur {
     */
 	public function getClass($class, $niveau){
 
-        $this->c->logger()->info(__METHOD__.' '.$class);
+        if($this->log)$this->log->info(__METHOD__.' '.$class);
         $this->arrFlux[$this->ordre]["class"] = $class;        
 
 		//gestion du changement de position de la classe
@@ -1648,8 +1797,7 @@ class Moteur {
                 }
             }
         	return;
-        }
-
+        }            
         $oItem = $this->getItemByClass($class);        
         return $this->generate(null, $oItem, $niveau+1);
 
@@ -1733,21 +1881,28 @@ class Moteur {
             $id = $this->cache->getItem($c, $success);
 
         if (!$success) {
-            $query = ['property'=>[
-                ['joiner'=>'and','property'=>$this->properties['dcterms']['description']->id(),'type'=>'eq','text'=>$class]
-            ]];
-            //TODO:trouver requête plus rapide pour éviter le cache ?
-            //on ne retourne que l'id
-            $items = $this->api->search('items',$query,['returnScalar'=>'id'])->getContent();
-            
-            if(count($items)==0)
-                throw new RuntimeException("Impossible de récupérer le concept. Aucun '".$class."' n'a été trouvés");
-            /*on prend le premier par défaut
-            if(count($items)>1)
-                throw new RuntimeException("Impossible de récupérer le concept. Plusieurs items ont été trouvés");
-            */
 
-            $id = $items[0];
+            //récupère l'item par l'identifiant s'il est défini
+            if(substr($class,0,5)=='oItem')
+                $id = substr($class,5);
+            else{
+                $query = ['property'=>[
+                    ['joiner'=>'and','property'=>$this->properties['dcterms']['description']->id(),'type'=>'eq','text'=>$class]
+                ]];
+                //TODO:trouver requête plus rapide pour éviter le cache ?
+                //on ne retourne que l'id
+                $items = $this->api->search('items',$query,['returnScalar'=>'id'])->getContent();
+                
+                if(count($items)==0)
+                    throw new RuntimeException("Impossible de récupérer le concept. Aucun '".$class."' n'a été trouvés");
+                /*on prend le premier par défaut
+                if(count($items)>1)
+                    throw new RuntimeException("Impossible de récupérer le concept. Plusieurs items ont été trouvés");
+                */
+    
+                $id = $items[0];    
+            }
+
             $this->cache->setItem($c, $id);
         }
         $oItem = $this->api->read('items', $id)->getContent();
