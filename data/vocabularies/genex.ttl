@@ -4,13 +4,13 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix o: <http://omeka.org/s/vocabs/o#> .
-@prefix lexinfo: <http://www.lexinfo.net/ontology/3.0/lexinfo#> .
+@prefix lexinfo: <http://www.lexinfo.net/ontology/2.0/lexinfo#> .
 @prefix genex: <https://jardindesconnaissances.univ-paris8.fr/onto/genex#> .
 
 <http://www.w3.org/2004/02/skos/core>
   a owl:Ontology ;
   dc:title "Vocabulaire GenEx "@fr ;
-  dc:creator "Samuel Szoniecky", "Jean-Pierre Balpe" ;
+  dc:creator "Samuel Szoniecky" ;
   rdfs:seeAlso <https://jardindesconnaissances.univ-paris8.fr/onto/genex> .
 
 genex:Concept
@@ -28,11 +28,6 @@ genex:Term
 genex:Generateur
   rdfs:label "Générateur"@fr ;
   skos:definition "Forme générative."@fr ;
-  a owl:Class .
-
-genex:GenSparql
-  rdfs:label "Générateur SPARQL"@fr ;
-  skos:definition "Forme sparql générative."@fr ;
   a owl:Class .
 
 genex:Generation
@@ -74,12 +69,11 @@ genex:Negation
 genex:hasPrefix a rdf:Property ;
     rdfs:label "A comme préfix"@fr ;
     rdfs:comment "Préfix de l'élément"@fr ;
-    owl:sameAs lexinfo:Prefix .
+    owl:sameAs lexinfo:Prefix.
 
 genex:hasReseau a rdf:Property ;
     rdfs:label "A comme réseau"@fr ;
-    rdfs:comment "Pour enregistrer l'instanciation du réseau d'un concept ou d'un générateur"@fr ;
-    rdfs:domain o:Resource .
+    rdfs:comment "Pour enregistrer l'instanciation du réseau d'un concept ou d'un générateur"@fr.
 
 genex:hasGenerateur a rdf:Property ;
     rdfs:label "A comme générateur"@fr ;
@@ -119,23 +113,15 @@ genex:hasConjugaison a rdf:Property ;
 
 genex:isCaract a rdf:Property ;
     rdfs:label "Est un caractère"@fr ;
-    rdfs:comment "Utiliser pour ne pas réévaluer le choix d'un concept. Le choix du concept est conservé lors de la génération."@fr  ;
-    rdfs:domain o:Resource .
+    rdfs:comment "Utiliser pour ne pas réévaluer le choix d'un concept. Le choix du concept est conservé lors de la génération."@fr .
 
 genex:hasElision a rdf:Property ;
     rdfs:label "A une élision"@fr ;
-    rdfs:comment "Utiliser pour définir si le term a une élision."@fr ;
-    rdfs:domain o:Resource .
+    rdfs:comment "Utiliser pour définir si le term a une élision."@fr.
 
 genex:hasType a rdf:Property ;
     rdfs:label "A comme type"@fr ;
-    rdfs:comment "Utiliser pour définir le(s) type(s) d'un concept."@fr ;
-    rdfs:domain o:Resource .
-
-genex:hasFlux a rdf:Property ;
-    rdfs:label "A comme flux"@fr ;
-    rdfs:comment "Utiliser pour enregistrer les flux générés."@fr ;
-    rdfs:domain o:Resource .
+    rdfs:comment "Utiliser pour définir le(s) type(s) d'un concept."@fr .
 
 genex:hasRefIeml a rdf:Property ;
     rdfs:label "A comme référence IEML"@fr ;

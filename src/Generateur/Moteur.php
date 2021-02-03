@@ -998,7 +998,7 @@ class Moteur {
      *
      * @return o:item;
      */
-	function getIdConjugaison($arr, $bNull=false){
+	function getIdConjugaison($arr, $bNull=true){
 
         $conj = $arr['item']->value('genex:hasConjugaison',['all'=>true]);
         if(!$conj && !$bNull)
@@ -1194,7 +1194,7 @@ class Moteur {
         $vecteur = $arr['vecteur'];
         //positionne les valeur par défaut
         if(!isset($vecteur["elision"]))$vecteur["elision"]="0";
-        if(!isset($vecteur["genre"]))$vecteur["elision"]=$this->defautGenre;
+        if(!isset($vecteur["genre"]))$vecteur["genre"]=$this->defautGenre;
         $oItem = $arr['determinant'];
 		if($vecteur){			
             if($this->log)$this->log->info(__METHOD__.' '.$oItem->id(),$vecteur);
@@ -1435,69 +1435,74 @@ class Moteur {
     /**
      * renvoie les données pour enregistrer l'item
      *
+     * @param boolean $detail
      * @return array
      */
-    public function getData()
+    public function getData($detail=true)
     {
-        //TODO:problème encodage Ï	cf. http://localhost/genlod/omk/admin/item/353886
-        foreach ($this->arrFlux as $f) {
-            if(isset($f['gen'])){
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
-                $valueObject['@value'] = $f['gen'];
-                $valueObject['type'] = 'literal';
-                $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
-            }
-            if(isset($f['determinant']) && $f['determinant']){
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
-                $valueObject['value_resource_id'] = $f['determinant']->id();
-                $valueObject['type'] = 'resource';        
-                $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
-            }
-            if(isset($f['item'])){
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
-                $valueObject['value_resource_id'] = $f['item']->id();
-                $valueObject['type'] = 'resource';        
-                $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
-            }
-            if(isset($f['verbe']) && isset($f['temps'])){
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
-                $valueObject['@value'] ='temps = '.$f['temps'].' - terminaison = '.$f['terminaison'];
-                $valueObject['type'] = 'literal';
-                $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
-            }                        
-            if(isset($f['txt'])){
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
-                $valueObject['@value'] = $f['txt'];
-                $valueObject['type'] = 'literal';
-                $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
-            }
-            if(isset($f['img'])){
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['foaf']['img']->id();
-                $valueObject['@id'] = $f['img'];
-                $valueObject['type'] = 'uri';
-                $this->data[$this->properties['foaf']['img']->term()][] = $valueObject;                    
-            }
+        if($detail){
 
-
-            if(isset($f['vecteur'])){
-                $vecteur = 'vecteur : ';
-                foreach ($f['vecteur'] as $k => $v) {
-                    $vecteur .= $k.' = '.$v.', ';
+            //TODO:problème encodage Ï	cf. http://localhost/genlod/omk/admin/item/353886        
+            foreach ($this->arrFlux as $f) {
+                if(isset($f['gen'])){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['@value'] = $f['gen'];
+                    $valueObject['type'] = 'literal';
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
                 }
-                $vecteur = substr($vecteur, 0, -2);
-                $valueObject = [];
-                $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
-                $valueObject['@value'] = $vecteur;
-                $valueObject['type'] = 'literal';
-                $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;
+                if(isset($f['determinant']) && $f['determinant']){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['value_resource_id'] = $f['determinant']->id();
+                    $valueObject['type'] = 'resource';        
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
+                }
+                if(isset($f['item'])){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['value_resource_id'] = $f['item']->id();
+                    $valueObject['type'] = 'resource';        
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
+                }
+                if(isset($f['verbe']) && isset($f['temps'])){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['@value'] ='temps = '.$f['temps'].' - terminaison = '.$f['terminaison'];
+                    $valueObject['type'] = 'literal';
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
+                }                        
+                if(isset($f['txt'])){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['@value'] = $f['txt'];
+                    $valueObject['type'] = 'literal';
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;                    
+                }
+                if(isset($f['img'])){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['foaf']['img']->id();
+                    $valueObject['@id'] = $f['img'];
+                    $valueObject['type'] = 'uri';
+                    $this->data[$this->properties['foaf']['img']->term()][] = $valueObject;                    
+                }
+
+
+                if(isset($f['vecteur'])){
+                    $vecteur = 'vecteur : ';
+                    foreach ($f['vecteur'] as $k => $v) {
+                        $vecteur .= $k.' = '.$v.', ';
+                    }
+                    $vecteur = substr($vecteur, 0, -2);
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['@value'] = $vecteur;
+                    $valueObject['type'] = 'literal';
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;
+                }
             }
         }
+
         $this->data['o:resource_class'] = ['o:id' => $this->resourceClasses['genex']['Generation']->id()];
         if($this->texte){
             $valueObject = [];
@@ -1744,7 +1749,7 @@ class Moteur {
                 ,'type'=>'eq','text'=>'determinant'.$det]
                 ]
             ];
-            $oItem = $this->api->searchOne('items', $query)->getContent();    
+            $oItem = $this->api->search('items', $query)->getContent()[0];    
         }
 
 		//ajoute le vecteur
