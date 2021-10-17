@@ -3,7 +3,7 @@ namespace Generateur\Service\ViewHelper;
 
 use Generateur\View\Helper\Moteur;
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Generateur\View\Helper\MoteurViewHelper;
 
 class MoteurFactory implements FactoryInterface

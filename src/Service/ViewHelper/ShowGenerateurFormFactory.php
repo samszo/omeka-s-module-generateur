@@ -3,7 +3,7 @@ namespace Generateur\Service\ViewHelper;
 
 use Generateur\View\Helper\ShowGenerateurForm;
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 
 class ShowGenerateurFormFactory implements FactoryInterface
 {

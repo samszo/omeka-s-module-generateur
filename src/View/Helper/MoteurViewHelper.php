@@ -1,7 +1,7 @@
 <?php
 namespace Generateur\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 use Generateur\Generateur\Moteur;
 
 class MoteurViewHelper extends AbstractHelper

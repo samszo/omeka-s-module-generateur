@@ -3,7 +3,7 @@ namespace Generateur\Service\Form;
 
 use Interop\Container\ContainerInterface;
 use Generateur\Form\QuickSearchForm;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 
 class QuickSearchFormFactory implements FactoryInterface
 {

@@ -1,7 +1,7 @@
 <?php
  /*
  * @author Samuel Szoniecky
- * @category   Zend
+ * @category   Laminas
  * @package library\Flux\Outils
  * @license https://creativecommons.org/licenses/by-sa/2.0/fr/ CC BY-SA 2.0 FR
  * @version  $Id:$
@@ -10,10 +10,13 @@ namespace Generateur\Generateur;
 
 use Omeka\Api\Exception\RuntimeException;
 use Omeka\Api\Exception\InvalidArgumentException;
-use Zend\Cache\StorageFactory;
-use Zend\Http\Client;
+use Laminas\Cache\StorageFactory;
+use Laminas\Http\Client;
 
 class Moteur {
+
+    protected $props;
+    protected $rcs;
 
     /**
      * @var array
@@ -75,6 +78,8 @@ class Moteur {
         'lexinfo'       => 'http://www.lexinfo.net/ontology/3.0/lexinfo#',
         'genex'         => 'https://jardindesconnaissances.univ-paris8.fr/onto/genex#',
         'foaf'          => 'http://xmlns.com/foaf/0.1/',
+        'jdc'           => 'https://jardindesconnaissances.univ-paris8.fr/onto/jdc#',
+        'skos'           => 'http://www.w3.org/2004/02/skos/core#',
     ];
     /**
      * Resource template to cache.
@@ -125,7 +130,7 @@ class Moteur {
     /**
      * Cache du module
      *
-     * @var Zend_Cache
+     * @var Laminas_Cache
      */
     var $cache;
     /**
@@ -161,6 +166,10 @@ class Moteur {
      * @var Client
      */
     protected $client;
+    /**
+     * @var cnx
+     */
+    protected $cnx;
 
     /**
      * Construct Moteur
@@ -168,9 +177,10 @@ class Moteur {
      * @param boolean   $bCache active le cache
      * @param object    $api controller pour gérer l'api
      * @param object    $log controller pour gérer les log
+     * @param object    $cnx controller pour gérer les requête sql
 
      */
-    public function __construct($bCache=true, $api, $log=false)
+    public function __construct($bCache=true, $api, $log=false, $cnx=false)
     {
         $this->api = $api;
         $this->cacheResourceClasses();
@@ -181,9 +191,271 @@ class Moteur {
         $this->initCache();
         $this->log = $log;
         //TODO récupérer les services par l'item->getServiceLocator()->get('Config') par exemple tempDir
+        $this->cnx = $cnx;
+        $this->props = [];
+        $this->rcs = [];
+  
+    }  
 
+    /**
+     * génère à partir d'une existence du JDC
+     *
+     * @param array     $params paramètres de la génération
+     * 
+     * @return array
+     */
+    public function genereExiJDC($params)
+    {
+        $result = [];
+         //récupère les rapports de génération = les rapports de l'existence ayant comme sujet l'actant générateur
+        /*vérifie si la requête SQL est plus rapide que omeka        
+        $temps_debut = microtime(true);
+        $oRapports = $this->getRessourceRapports($exi,$params);
+        $temps_fin = microtime(true);
+        $tG = str_replace(".",",",round($temps_fin - $temps_debut, 4));
+        */
+        $temps_debut = microtime(true);
+        $oRapports = $this->getRessourceRapportsSQL(['idR'=>$params['idExi'],'idSujet'=>$params['data']['id']]);
+        $temps_fin = microtime(true);
+        $tG1 = str_replace(".",",",round($temps_fin - $temps_debut, 4));
+        //traitement des rapports de génération
+        $generations=[];
+        $doublons = [];
+        for ($i=0; $i < count($oRapports); $i++) { 
+            foreach ($params['paramsGen'] as $pg) {
+                if(!isset($generations[$oRapports[$i]['o']->id()]))$generations[$oRapports[$i]['o']->id()]=[];
+                switch ($pg) {
+                    case 'replaceSamePredicatValue':
+                        /*récupère les ressources correspondant aux prédicats = 
+                        les items de la propriété Top concept dans les rapports avec :
+                        propriété skos = même que l'objet
+                        valeur = même que le prédicat 
+                        */
+                        if(!isset($doublons[$pg.$oRapports[$i]['o']->id()])){
+                            $rs = $this->getRessourceWithPredicat($oRapports[$i]['o']->id());                        
+                            $generations[$oRapports[$i]['o']->id()][$pg] = $rs;    
+                            $doublons[$pg.$oRapports[$i]['o']->id()]=1;
+                        }
+                        break;                
+                }
+            }
+        }
+
+
+        //récupères les physiques de l'existence
+        $exi = $this->api->read('items',$params['idExi'])->getContent();
+        $physiques = $exi->value('jdc:hasPhysique',['all'=>true]);
+        foreach ($physiques as $vPhy) {
+          $rPhy = $vPhy->valueResource();
+          //récupére les parties du physique de l'existence
+          $haspart = $rPhy->value('dcterms:hasPart',['all'=>true]);
+          foreach ($haspart as $p) {
+            $op = json_decode($p->__toString(),true);
+            //vérifie si la partie doit être générée
+            if(isset($generations[$op['itemAsso']])){
+                foreach ($generations[$op['itemAsso']] as $type => $data) {
+                    //initialise le résultat de la génération
+                    if(!isset($result[$rPhy->id()]))$result[$rPhy->id()]=[];
+                    //applique le type de transformation 
+                    //TODO:gérer les autres générations et les autres médias
+                    switch ($type) {
+                        case 'replaceSamePredicatValue':
+                            $result[$rPhy->id()]=$this->replaceSamePredicatValue($result[$rPhy->id()], $rPhy, $op, $data);
+                        break;
+                    }
+                }
+            }
+          }  
+          $this->arrFlux[]=['jdc'=>$result];
+        }        
+        return ['exi'=>$exi,'rslt'=>$this->getTexte(),'data'=>$this->getData(true)];
+      
+    }
+
+    /**
+     * remplace la même valeur de prédicat
+     *
+     * @param array         $rslt = résultat de la génération
+     * @param o:ressource   $r ressource omeka
+     * @param array         $p partie de la ressource omeka
+     * @param array         $g data pour la génération
+     * 
+     * @return array
+     */
+    function replaceSamePredicatValue($rslt, $r, $p, $g){
+        if(!isset($rslt['replaceSamePredicatValue'])){
+            //récupère les mots du physique
+            $words = $newwords = explode(" ", trim(preg_replace('!\s+!', ' ', $r->displayTitle())));
+            $rslt['replaceSamePredicatValue']=['w'=>$words,'nw'=>$newwords,'rPhy'=>$r->id(),'rTrans'=>[]];                    
+        }
+        for ($i=0; $i < count($p['data']); $i++) { 
+            $assos = $p['data'][$i];
+            if($i==0){
+                //choix des données de transformation
+                $nw = $g[array_rand($g)];                  
+                //remplace le premier mot par la ressource choisie
+                $rslt['replaceSamePredicatValue']['nw'][$assos['ordre']]=$nw['titreTopConcept'];  
+            }else{
+                //efface les autres mots
+                $rslt['replaceSamePredicatValue']['nw'][$assos['ordre']]="";
+                $nw='';
+            }
+            //enregistre le flux de transformation
+            $rslt['replaceSamePredicatValue']['rTrans'][]=[
+                'choix'=>$nw,'ordre'=>$i
+                ,'src'=>$rslt['replaceSamePredicatValue']['w'][$assos['ordre']]
+                ,'dst'=>$rslt['replaceSamePredicatValue']['nw'][$assos['ordre']]
+            ];
+        }        
+        $rslt['txt']=implode(' ',$rslt['replaceSamePredicatValue']['nw']);
+        
+        return $rslt;
 
     }
+
+    /**
+     * récupère les ressources d'un jdc:rapport
+     *
+     * @param o:ressource   $r ressource omeka
+     * @param array         $params paramètres de la génération
+     * 
+     * @return array
+     */
+    function getRessourceRapports($r, $params){
+        $rapports = $r->value('jdc:hasRapport',['all'=>true]);
+        $oRapports = [];
+        foreach ($rapports as $r) {
+          if (in_array($r->type(), ['resource', 'resource:item'])) {
+            $rr=$r->valueResource();
+            $rSujet = $rr->value('jdc:hasSujet')->valueResource();
+            if($rSujet->id()==$params['data']['id']){
+              $oRapports[]=['r'=>$rr,'s'=>$rSujet
+                ,'o'=>$rr->value('jdc:hasObjet')->valueResource()
+                ,'p'=>$rr->value('jdc:hasPredicat')->valueResource()];
+            }
+          }
+        }
+        return $oRapports;
+      }
+    /**
+     * récupère les ressources d'un jdc:rapport par une requête SQL
+     *
+     * @param o:ressource   $r ressource omeka
+     * @param array         $params paramètres de la génération
+     * 
+     * @return array
+     */
+    function getRessourceRapportsSQL($params){
+        $query ="SELECT 
+            r.id idExi,
+            vRapport.value_resource_id idRapport,
+            vSujet.value_resource_id idSujet,
+            vObjet.value_resource_id idObjet,
+            vPred.value_resource_id idPred
+        FROM
+            resource r
+                INNER JOIN
+            value vRapport ON vRapport.resource_id = r.id
+                AND vRapport.property_id = ?
+                INNER JOIN
+            value vSujet ON vSujet.resource_id = vRapport.value_resource_id
+                AND vSujet.property_id = ?
+                INNER JOIN
+            value vObjet ON vObjet.resource_id = vRapport.value_resource_id
+                AND vObjet.property_id = ?
+                INNER JOIN
+            value vPred ON vPred.resource_id = vRapport.value_resource_id
+                AND vPred.property_id = ?
+        WHERE
+            r.id = ?";
+        $pq = [
+            $this->properties["jdc"]["hasRapport"]->id()
+            ,$this->properties["jdc"]["hasSujet"]->id()
+            ,$this->properties["jdc"]["hasObjet"]->id()
+            ,$this->properties["jdc"]["hasPredicat"]->id()
+            ,$params['idR']
+        ];
+        if($params['idSujet']){
+        $query .= " AND vSujet.value_resource_id = ? ";
+        $pq[]=$params['idSujet'];
+        }
+        $rs = $this->cnx->fetchAll($query,$pq);
+        //formate les données
+        $result = [];
+        foreach ($rs as $r) {
+            $result[]=[
+            'exi'=>$this->api->read('items',$r['idExi'])->getContent()  
+            ,'rapport'=>$this->api->read('items',$r['idRapport'])->getContent()
+            ,'s'=>$this->api->read('items',$r['idSujet'])->getContent()
+            ,'o'=>$this->api->read('items',$r['idObjet'])->getContent()
+            ,'p'=>$this->api->read('items',$r['idPred'])->getContent()
+        ];
+        }
+        return $result;       
+
+    }
+
+    /**
+     * récupère les ressources avec les prédicats d'une ressource
+     *
+     * @param int       $id identifiant de la ressource omeka
+     * 
+     * @return array
+     */
+    function getRessourceWithPredicat($id){
+        $query ="SELECT 
+            vRapport.id,
+            vRapport.resource_id,
+            p.label lblTypeRela,
+            vProp.property_id idTypeRela,
+            rtp.alternate_comment,
+            vProp.value_resource_id idRela,
+            vPropTitle.value lblRela,
+            vR.value_resource_id idSemPosi,
+            vTopC.value_resource_id idTopConcept,
+            vTopCTitle.value titreTopConcept
+        FROM
+            value vRapport
+                INNER JOIN
+            value vProp ON vProp.resource_id = vRapport.resource_id
+                INNER JOIN
+            property p ON p.id = vProp.property_id
+                INNER JOIN
+            resource_template_property rtp ON rtp.property_id = vProp.property_id
+                AND rtp.resource_template_id = ?
+                AND rtp.alternate_comment IS NOT NULL
+                INNER JOIN
+            value vPropTitle ON vPropTitle.resource_id = vProp.value_resource_id
+                AND vPropTitle.property_id = ?
+                INNER JOIN
+            value vR ON vR.property_id = vProp.property_id
+                AND vR.value_resource_id = vProp.value_resource_id
+                INNER JOIN
+            value vTopC ON vTopC.property_id = ?
+                AND vTopC.resource_id = vR.resource_id
+                INNER JOIN
+            value vTopCTitle ON vTopCTitle.resource_id = vTopC.value_resource_id
+                AND vTopCTitle.property_id = ?
+        WHERE
+            vRapport.property_id = ?
+                AND vRapport.value_resource_id = ?";
+        $pq = [
+        $this->api->read('resource_templates', ['label' => 'JDC Rapports entre concepts'])->getContent()->id()
+        ,$this->properties["dcterms"]["title"]->id()
+        ,$this->properties["skos"]["hasTopConcept"]->id()
+        ,$this->properties["dcterms"]["title"]->id()
+        ,$this->properties["skos"]["hasTopConcept"]->id()
+        ,$id
+        ];
+        $rs = $this->cnx->fetchAll($query,$pq);
+        /*ajoute les objets omeka
+        for ($i=0; $i < count($rs); $i++) { 
+            $rs[$i]['o']=$this->api->read('items',$rs[$i]['idTopConcept'])->getContent();
+        }
+        */
+        return $rs;       
+
+    }    
 
     /**
      * génère une conjugaison
@@ -651,7 +923,12 @@ class Moteur {
 				}elseif(isset($arr["item"])){	
                     $this->arrFlux[$i]=$this->genereItem($arr);				
                     $this->texte .= $this->arrFlux[$i]["txt"]." ";
-				}
+				}elseif(isset($arr["jdc"])){
+                    foreach ($arr["jdc"] as $k => $v) {
+                        $this->texte .= $v["txt"]." ";
+                    }	
+                }
+                    
 			}
 		}
 		
@@ -1486,8 +1763,6 @@ class Moteur {
                     $valueObject['type'] = 'uri';
                     $this->data[$this->properties['foaf']['img']->term()][] = $valueObject;                    
                 }
-
-
                 if(isset($f['vecteur'])){
                     $vecteur = 'vecteur : ';
                     foreach ($f['vecteur'] as $k => $v) {
@@ -1500,10 +1775,18 @@ class Moteur {
                     $valueObject['type'] = 'literal';
                     $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;
                 }
+                if(isset($f['jdc'])){
+                    $valueObject = [];
+                    $valueObject['property_id'] = $this->properties['genex']['hasFlux']->id();
+                    $valueObject['@value'] = json_encode($f['jdc']);
+                    $valueObject['type'] = 'literal';
+                    $this->data[$this->properties['genex']['hasFlux']->term()][] = $valueObject;
+                }
             }
         }
 
         $this->data['o:resource_class'] = ['o:id' => $this->resourceClasses['genex']['Generation']->id()];
+        
         if($this->texte){
             $valueObject = [];
             $valueObject['property_id'] = $this->properties['bibo']['content']->id();

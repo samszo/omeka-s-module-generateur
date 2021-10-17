@@ -2,8 +2,8 @@
 namespace Generateur\Form;
 
 use Omeka\View\Helper\Api;
-use Zend\Form\Element;
-use Zend\Form\Form;
+use Laminas\Form\Element;
+use Laminas\Form\Form;
 
 class GenerateurForm extends Form
 {

@@ -70,7 +70,7 @@ class GenerationRepresentation extends AbstractResourceEntityRepresentation
         );
     }
 
-    public function displayTitle($default = null)
+    public function displayTitle($default = null, $lang = NULL)
     {
         $title = $this->title();
         if (null !== $title) {

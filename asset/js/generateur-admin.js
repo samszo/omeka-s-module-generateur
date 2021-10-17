@@ -89,7 +89,7 @@ $(document).ready(function() {
     /**
      * Append an generation sub-form to the resource template form.
      *
-     * @todo Allows Omeka to append a form element via triggers in Zend form or js.
+     * @todo Allows Omeka to append a form element via triggers in Laminas form or js.
      * @see Omeka resource-template-form.js
      */
 

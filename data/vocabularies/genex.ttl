@@ -143,3 +143,7 @@ genex:sparqlQuery a rdf:Property ;
 genex:sparqlEndpoint a rdf:Property ;
     rdfs:label "Endpoint SPARQL"@fr ;
     rdfs:comment "Adresse d'un service SPARQL."@fr .            
+
+genex:hasFlux a rdf:Property ;
+    rdfs:label "A comme flux"@fr ;
+    rdfs:comment "Utiliser pour définir le flux génératif."@fr .        

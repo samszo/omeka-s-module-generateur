@@ -31,10 +31,10 @@ namespace Generic;
 use Omeka\Module\Exception\ModuleCannotInstallException;
 use Omeka\Settings\SettingsInterface;
 use Omeka\Stdlib\Message;
-use Zend\EventManager\Event;
-use Zend\Mvc\Controller\AbstractController;
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\View\Renderer\PhpRenderer;
+use Laminas\EventManager\Event;
+use Laminas\Mvc\Controller\AbstractController;
+use Laminas\ServiceManager\ServiceLocatorInterface;
+use Laminas\View\Renderer\PhpRenderer;
 
 /**
  * This class allows to manage all methods that should run only once and that
@@ -43,7 +43,7 @@ use Zend\View\Renderer\PhpRenderer;
  * The logic is "config over code": so all settings have just to be set in the
  * main `config/module.config.php` file, inside a key with the lowercase module
  * name,  with sub-keys `config`, `settings`, `site_settings`, `user_settings`
- * and `block_settings`. All the forms have just to be standard Zend form.
+ * and `block_settings`. All the forms have just to be standard Laminas form.
  * Eventual install and uninstall sql can be set in `data/install/` and upgrade
  * code in `data/scripts`.
  *
@@ -216,7 +216,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
         /** @var \Omeka\Mvc\Status $status */
         $status = $services->get('Omeka\Status');
         if ($status->isAdminRequest()) {
-            /** @var \Zend\Router\Http\RouteMatch $routeMatch */
+            /** @var \Laminas\Router\Http\RouteMatch $routeMatch */
             $routeMatch = $services->get('Application')->getMvcEvent()->getRouteMatch();
             if (!in_array($routeMatch->getParam('controller'), ['Omeka\Controller\Admin\User', 'user'])) {
                 return;
@@ -442,7 +442,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
                 $id = $site()->id();
                 break;
             case 'user_settings':
-                /** @var \Zend\Router\Http\RouteMatch $routeMatch */
+                /** @var \Laminas\Router\Http\RouteMatch $routeMatch */
                 $routeMatch = $services->get('Application')->getMvcEvent()->getRouteMatch();
                 $id = $routeMatch->getParam('id');
                 break;
@@ -468,7 +468,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
 
         $space = strtolower(static::NAMESPACE);
 
-        /** @var \Zend\Form\Form $form */
+        /** @var \Laminas\Form\Form $form */
         $fieldset = $services->get('FormElementManager')->get($settingFieldsets[$settingsType]);
         $fieldset->setName($space);
         $form = $event->getTarget();
