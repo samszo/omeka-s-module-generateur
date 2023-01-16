@@ -1,6 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 /*
- * Copyright Daniel Berthereau, 2018-2020
+ * Copyright Daniel Berthereau, 2018-2023
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -28,13 +28,14 @@
 
 namespace Generic;
 
+use Laminas\EventManager\Event;
+use Laminas\Mvc\Controller\AbstractController;
+use Laminas\Mvc\MvcEvent;
+use Laminas\ServiceManager\ServiceLocatorInterface;
+use Laminas\View\Renderer\PhpRenderer;
 use Omeka\Module\Exception\ModuleCannotInstallException;
 use Omeka\Settings\SettingsInterface;
 use Omeka\Stdlib\Message;
-use Laminas\EventManager\Event;
-use Laminas\Mvc\Controller\AbstractController;
-use Laminas\ServiceManager\ServiceLocatorInterface;
-use Laminas\View\Renderer\PhpRenderer;
 
 /**
  * This class allows to manage all methods that should run only once and that
@@ -43,7 +44,7 @@ use Laminas\View\Renderer\PhpRenderer;
  * The logic is "config over code": so all settings have just to be set in the
  * main `config/module.config.php` file, inside a key with the lowercase module
  * name,  with sub-keys `config`, `settings`, `site_settings`, `user_settings`
- * and `block_settings`. All the forms have just to be standard Laminas form.
+ * and `block_settings`. All the forms have just to be standard Zend form.
  * Eventual install and uninstall sql can be set in `data/install/` and upgrade
  * code in `data/scripts`.
  *
@@ -56,84 +57,153 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
         return include $this->modulePath() . '/config/module.config.php';
     }
 
-    public function install(ServiceLocatorInterface $serviceLocator)
+    public function onBootstrap(MvcEvent $event): void
     {
-        $this->setServiceLocator($serviceLocator);
-        $this->preInstall();
-        $this->checkDependency();
-        $this->checkDependencies();
-        $this->checkAllResourcesToInstall();
-        $this->execSqlFromFile($this->modulePath() . '/data/install/schema.sql');
-        $this->installAllResources();
-        $this->manageConfig('install');
-        $this->manageMainSettings('install');
-        $this->manageSiteSettings('install');
-        $this->manageUserSettings('install');
-        $this->postInstall();
+        parent::onBootstrap($event);
+
+        // Check last version of modules.
+        $sharedEventManager = $this->getServiceLocator()->get('SharedEventManager');
+        $sharedEventManager->attach(
+            'Omeka\Controller\Admin\Module',
+            'view.browse.after',
+            [$this, 'checkAddonVersions']
+        );
     }
 
-    public function uninstall(ServiceLocatorInterface $serviceLocator)
+    public function install(ServiceLocatorInterface $services): void
     {
-        $this->setServiceLocator($serviceLocator);
+        $this->setServiceLocator($services);
+        $translator = $services->get('MvcTranslator');
+        $this->preInstall();
+        if (!$this->checkDependency()) {
+            $message = new Message(
+                $translator->translate('This module requires the module "%s".'), // @translate
+                $this->dependency
+            );
+            throw new ModuleCannotInstallException((string) $message);
+        }
+        if (!$this->checkDependencies()) {
+            if (count($this->dependencies) === 1) {
+                $message = new Message(
+                    $translator->translate('This module requires the module "%s".'), // @translate
+                    reset($this->dependencies)
+                );
+            } else {
+                $message = new Message(
+                    $translator->translate('This module requires modules "%s".'), // @translate
+                    implode('", "', $this->dependencies)
+                );
+            }
+            throw new ModuleCannotInstallException((string) $message);
+        }
+        if (!$this->checkAllResourcesToInstall()) {
+            $message = new Message(
+                $translator->translate('This module has resources that cannot be installed.') // @translate
+            );
+            throw new ModuleCannotInstallException((string) $message);
+        }
+        $sqlFile = $this->modulePath() . '/data/install/schema.sql';
+        if (!$this->checkNewTablesFromFile($sqlFile)) {
+            $message = new Message(
+                $translator->translate('This module cannot install its tables, because they exist already. Try to remove them first.') // @translate
+            );
+            throw new ModuleCannotInstallException((string) $message);
+        }
+        $this->execSqlFromFile($sqlFile);
+        $this
+            ->installAllResources()
+            ->manageConfig('install')
+            ->manageMainSettings('install')
+            ->manageSiteSettings('install')
+            ->manageUserSettings('install')
+            ->postInstall();
+    }
+
+    public function uninstall(ServiceLocatorInterface $services): void
+    {
+        $this->setServiceLocator($services);
         $this->preUninstall();
         $this->execSqlFromFile($this->modulePath() . '/data/install/uninstall.sql');
-        $this->manageConfig('uninstall');
-        $this->manageMainSettings('uninstall');
-        $this->manageSiteSettings('uninstall');
-        // Don't uninstall user settings, they don't belong to admin.
-        // $this->manageUserSettings('uninstall');
-        $this->postUninstall();
+        $this
+            ->manageConfig('uninstall')
+            ->manageMainSettings('uninstall')
+            ->manageSiteSettings('uninstall')
+            // Don't uninstall user settings, they don't belong to admin.
+            // ->manageUserSettings('uninstall')
+            ->postUninstall();
     }
 
-    public function upgrade($oldVersion, $newVersion, ServiceLocatorInterface $serviceLocator)
+    public function upgrade($oldVersion, $newVersion, ServiceLocatorInterface $services): void
     {
         $filepath = $this->modulePath() . '/data/scripts/upgrade.php';
         if (file_exists($filepath) && filesize($filepath) && is_readable($filepath)) {
+            // For compatibility with old upgrade files.
+            $serviceLocator = $services;
             $this->setServiceLocator($serviceLocator);
             require_once $filepath;
         }
     }
 
-    /**
-     * @throws \Omeka\Module\Exception\ModuleCannotInstallException
-     */
-    public function checkAllResourcesToInstall()
+    public function getInstallResources(): ?InstallResources
     {
         if (!class_exists(\Generic\InstallResources::class)) {
-            if (file_exists(dirname(dirname(dirname(__DIR__))) . '/Generic/InstallResources.php')) {
-                require_once dirname(dirname(dirname(__DIR__))) . '/Generic/InstallResources.php';
-            } elseif (file_exists(__DIR__ . '/InstallResources.php')) {
-                require_once __DIR__ . '/InstallResources.php';
+            // Use the module file first, since it must be present with the
+            // right version, even if AbstractModule is older in another module.
+            if (file_exists($filepath = OMEKA_PATH . '/modules/' . static::NAMESPACE . '/src/Generic/InstallResources.php')) {
+                require_once $filepath;
+            } elseif (file_exists($filepath = dirname(__DIR__, 3) . '/Generic/InstallResources.php')) {
+                require_once $filepath;
+            } elseif (file_exists($filepath = __DIR__ . '/InstallResources.php')) {
+                require_once $filepath;
             } else {
-                // Nothing to install.
-                return true;
+                return null;
             }
         }
-
         $services = $this->getServiceLocator();
-        $installResources = new \Generic\InstallResources($services);
-        $installResources->checkAllResources(static::NAMESPACE);
+        return new \Generic\InstallResources($services);
+    }
+
+    public function checkAllResourcesToInstall(): bool
+    {
+        $installResources = $this->getInstallResources();
+        return $installResources
+            ? $installResources->checkAllResources(static::NAMESPACE)
+            // Nothing to install.
+            : true;
     }
 
     /**
-     * @throws \Omeka\Module\Exception\ModuleCannotInstallException
+     * @return self
      */
-    public function installAllResources()
+    public function installAllResources(): AbstractModule
     {
-        if (!class_exists(\Generic\InstallResources::class)) {
-            if (file_exists(dirname(dirname(dirname(__DIR__))) . '/Generic/InstallResources.php')) {
-                require_once dirname(dirname(dirname(__DIR__))) . '/Generic/InstallResources.php';
-            } elseif (file_exists(__DIR__ . '/InstallResources.php')) {
-                require_once __DIR__ . '/InstallResources.php';
-            } else {
-                // Nothing to install.
-                return true;
-            }
+        $installResources = $this->getInstallResources();
+        if (!$installResources) {
+            // Nothing to install.
+            return $this;
         }
-
-        $services = $this->getServiceLocator();
-        $installResources = new \Generic\InstallResources($services);
         $installResources->createAllResources(static::NAMESPACE);
+        return $this;
+    }
+
+    public function checkAddonVersions(Event $event): void
+    {
+        global $globalCheckAddonVersions;
+
+        if ($globalCheckAddonVersions) {
+            return;
+        }
+        $globalCheckAddonVersions = true;
+
+        $view = $event->getTarget();
+        $hasGenericAsset = basename(dirname(__DIR__)) === 'modules' || file_exists(dirname(__DIR__, 3) . '/Generic/asset/js/check-versions.js');
+        $asset = $hasGenericAsset
+            ? $view->assetUrl('../../Generic/asset/js/check-versions.js', static::NAMESPACE)
+            // Use a cdn to avoid issues with different versions in modules.
+            // Of course, it's simpler to have an up-to-date Generic module.
+            : 'https://cdn.jsdelivr.net/gh/Daniel-KM/Omeka-S-module-Generic@3.3.35/asset/js/check-versions.js';
+        $view->headScript()
+            ->appendFile($asset, 'text/javascript', ['defer' => 'defer']);
     }
 
     public function getConfigForm(PhpRenderer $renderer)
@@ -158,9 +228,10 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
             return '';
         }
 
-        $form = $services->get('FormElementManager')->get($formClass);
+        $form = $formManager->get($formClass);
         $form->init();
         $form->setData($data);
+        $form->prepare();
         return $renderer->formCollection($form);
     }
 
@@ -200,24 +271,24 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
         return true;
     }
 
-    public function handleMainSettings(Event $event)
+    public function handleMainSettings(Event $event): void
     {
         $this->handleAnySettings($event, 'settings');
     }
 
-    public function handleSiteSettings(Event $event)
+    public function handleSiteSettings(Event $event): void
     {
         $this->handleAnySettings($event, 'site_settings');
     }
 
-    public function handleUserSettings(Event $event)
+    public function handleUserSettings(Event $event): void
     {
         $services = $this->getServiceLocator();
         /** @var \Omeka\Mvc\Status $status */
         $status = $services->get('Omeka\Status');
         if ($status->isAdminRequest()) {
             /** @var \Laminas\Router\Http\RouteMatch $routeMatch */
-            $routeMatch = $services->get('Application')->getMvcEvent()->getRouteMatch();
+            $routeMatch = $status->getRouteMatch();
             if (!in_array($routeMatch->getParam('controller'), ['Omeka\Controller\Admin\User', 'user'])) {
                 return;
             }
@@ -225,28 +296,90 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
         }
     }
 
-    /**
-     * @return string
-     */
-    protected function modulePath()
+    protected function modulePath(): string
     {
         return OMEKA_PATH . '/modules/' . static::NAMESPACE;
     }
 
-    protected function preInstall()
+    protected function preInstall(): void
     {
     }
 
-    protected function postInstall()
+    protected function postInstall(): void
+    {
+        $services = $this->getServiceLocator();
+        $filepath = $this->modulePath() . '/data/scripts/install.php';
+        if (file_exists($filepath) && filesize($filepath) && is_readable($filepath)) {
+            $this->setServiceLocator($services);
+            require_once $filepath;
+        }
+    }
+
+    protected function preUninstall(): void
     {
     }
 
-    protected function preUninstall()
+    protected function postUninstall(): void
     {
     }
 
-    protected function postUninstall()
+    /**
+     * Check if new tables can be installed and remove empty existing tables.
+     *
+     * If a new table exists and is empty, it is removed, because it is probably
+     * related to a broken installation.
+     */
+    protected function checkNewTablesFromFile(string $filepath): bool
     {
+        if (!file_exists($filepath) || !filesize($filepath) || !is_readable($filepath)) {
+            return true;
+        }
+
+        /** @var \Doctrine\DBAL\Connection $connection */
+        $services = $this->getServiceLocator();
+        $connection = $services->get('Omeka\Connection');
+
+        // Get the list of all tables.
+        $tables = $connection->executeQuery('SHOW TABLES;')->fetchFirstColumn();
+
+        $dropTables = [];
+
+        // Use single statements for execution.
+        // See core commit #2689ce92f.
+        $sql = file_get_contents($filepath);
+        $sqls = array_filter(array_map('trim', explode(";\n", $sql)));
+        foreach ($sqls as $sql) {
+            if (mb_strtoupper(mb_substr($sql, 0, 13)) !== 'CREATE TABLE ') {
+                continue;
+            }
+            $table = trim(strtok(mb_substr($sql, 13), '('), "\"`' \n\r\t\v\0");
+            if (!in_array($table, $tables)) {
+                continue;
+            }
+            $result = $connection->executeQuery("SELECT * FROM `$table` LIMIT 1;")->fetchOne();
+            if ($result !== false) {
+                return false;
+            }
+            $dropTables[] = $table;
+        }
+
+        if (count($dropTables)) {
+            // No check: if a table cannot be removed, an exception will be
+            // thrown later.
+            foreach ($dropTables as $table) {
+                $connection->executeStatement("DROP TABLE `$table`;");
+            }
+
+            $translator = $services->get('MvcTranslator');
+            $message = new \Omeka\Stdlib\Message(
+                $translator->translate('The module removed tables "%s" from a previous broken install.'), // @translate
+                implode('", "', $dropTables)
+            );
+            $messenger = $services->get('ControllerPluginManager')->get('messenger');
+            $messenger->addWarning($message);
+        }
+
+        return true;
     }
 
     /**
@@ -255,24 +388,39 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      * @param string $filepath
      * @return int|null
      */
-    protected function execSqlFromFile($filepath)
+    protected function execSqlFromFile(string $filepath): ?int
     {
         if (!file_exists($filepath) || !filesize($filepath) || !is_readable($filepath)) {
             return null;
         }
-        $services = $this->getServiceLocator();
+
         /** @var \Doctrine\DBAL\Connection $connection */
+        $services = $this->getServiceLocator();
         $connection = $services->get('Omeka\Connection');
-        $sql = file_get_contents($filepath);
 
         // Use single statements for execution.
         // See core commit #2689ce92f.
+        $sql = file_get_contents($filepath);
         $sqls = array_filter(array_map('trim', explode(";\n", $sql)));
         foreach ($sqls as $sql) {
-            $result = $connection->exec($sql);
+            $result = $connection->executeStatement($sql);
         }
 
         return $result;
+    }
+
+    protected function getServiceSettings(string $settingsType): \Omeka\Settings\AbstractSettings
+    {
+        $settingsTypes = [
+            // 'config' => 'Omeka\Settings',
+            'settings' => 'Omeka\Settings',
+            'site_settings' => 'Omeka\Settings\Site',
+            'user_settings' => 'Omeka\Settings\User',
+        ];
+        if (!isset($settingsTypes[$settingsType])) {
+            return null;
+        }
+        return $this->getServiceLocator()->get($settingsTypes[$settingsType]);
     }
 
     /**
@@ -280,12 +428,13 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * @param string $process
      * @param array $values Values to use when process is update.
+     * @return self
      */
-    protected function manageConfig($process, array $values = [])
+    protected function manageConfig(string $process, array $values = []): AbstractModule
     {
         $services = $this->getServiceLocator();
         $settings = $services->get('Omeka\Settings');
-        $this->manageAnySettings($settings, 'config', $process, $values);
+        return $this->manageAnySettings($settings, 'config', $process, $values);
     }
 
     /**
@@ -293,12 +442,13 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * @param string $process
      * @param array $values Values to use when process is update.
+     * @return self
      */
-    protected function manageMainSettings($process, array $values = [])
+    protected function manageMainSettings(string $process, array $values = []): AbstractModule
     {
         $services = $this->getServiceLocator();
         $settings = $services->get('Omeka\Settings');
-        $this->manageAnySettings($settings, 'settings', $process, $values);
+        return $this->manageAnySettings($settings, 'settings', $process, $values);
     }
 
     /**
@@ -308,14 +458,15 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * @param string $process
      * @param array $values Values to use when process is update, by site id.
+     * @return self
      */
-    protected function manageSiteSettings($process, array $values = [])
+    protected function manageSiteSettings(string $process, array $values = []): AbstractModule
     {
         $settingsType = 'site_settings';
         $config = $this->getConfig();
         $space = strtolower(static::NAMESPACE);
         if (empty($config[$space][$settingsType])) {
-            return;
+            return $this;
         }
         $services = $this->getServiceLocator();
         $settings = $services->get('Omeka\Settings\Site');
@@ -327,9 +478,10 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
                 $settings,
                 $settingsType,
                 $process,
-                isset($values[$id]) ? $values[$id] : []
+                $values[$id] ?? []
             );
         }
+        return $this;
     }
 
     /**
@@ -339,14 +491,15 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * @param string $process
      * @param array $values Values to use when process is update, by user id.
+     * @return self
      */
-    protected function manageUserSettings($process, array $values = [])
+    protected function manageUserSettings(string $process, array $values = []): AbstractModule
     {
         $settingsType = 'user_settings';
         $config = $this->getConfig();
         $space = strtolower(static::NAMESPACE);
         if (empty($config[$space][$settingsType])) {
-            return;
+            return $this;
         }
         $services = $this->getServiceLocator();
         $settings = $services->get('Omeka\Settings\User');
@@ -358,9 +511,10 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
                 $settings,
                 $settingsType,
                 $process,
-                isset($values[$id]) ? $values[$id] : []
+                $values[$id] ?? []
             );
         }
+        return $this;
     }
 
     /**
@@ -370,15 +524,16 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * @param SettingsInterface $settings
      * @param string $settingsType
-     * @param string $process
+     * @param string $process "install", "uninstall", "update".
      * @param array $values
+     * @return $this;
      */
-    protected function manageAnySettings(SettingsInterface $settings, $settingsType, $process, array $values = [])
+    protected function manageAnySettings(SettingsInterface $settings, string $settingsType, string $process, array $values = []): AbstractModule
     {
         $config = $this->getConfig();
         $space = strtolower(static::NAMESPACE);
         if (empty($config[$space][$settingsType])) {
-            return;
+            return $this;
         }
         $defaultSettings = $config[$space][$settingsType];
         foreach ($defaultSettings as $name => $value) {
@@ -396,6 +551,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
                     break;
             }
         }
+        return $this;
     }
 
     /**
@@ -403,23 +559,13 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * @param Event $event
      * @param string $settingsType
-     * @return \Zend\Form\Form|null
+     * @return \Laminas\Form\Fieldset|null
      */
-    protected function handleAnySettings(Event $event, $settingsType)
+    protected function handleAnySettings(Event $event, string $settingsType): ?\Laminas\Form\Fieldset
     {
         global $globalNext;
 
         $services = $this->getServiceLocator();
-
-        $settingsTypes = [
-            // 'config' => 'Omeka\Settings',
-            'settings' => 'Omeka\Settings',
-            'site_settings' => 'Omeka\Settings\Site',
-            'user_settings' => 'Omeka\Settings\User',
-        ];
-        if (!isset($settingsTypes[$settingsType])) {
-            return null;
-        }
 
         // TODO Check fieldsets in the config of the module.
         $settingFieldsets = [
@@ -432,7 +578,10 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
             return null;
         }
 
-        $settings = $services->get($settingsTypes[$settingsType]);
+        $settings = $this->getServiceSettings($settingsType);
+        if (!$settings) {
+            return null;
+        }
 
         switch ($settingsType) {
             case 'settings':
@@ -469,25 +618,105 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
 
         $space = strtolower(static::NAMESPACE);
 
-        /** @var \Laminas\Form\Form $form */
+        /**
+         * @var \Laminas\Form\Fieldset $fieldset
+         * @var \Laminas\Form\Form $form
+         */
         $fieldset = $services->get('FormElementManager')->get($settingFieldsets[$settingsType]);
         $fieldset->setName($space);
         $form = $event->getTarget();
+
+        // In Omeka S v4, settings  are no more managed with fieldsets, but with
+        // "element groups", to de-correlate setting storage and display.
+
+        // Handle form loading.
+        // There are default element groups:
+        // - Settings:
+        //   - general
+        //   - security
+        // - Site settings:
+        //   - general
+        //   - language
+        //   - browse
+        //   - show
+        //   - search
+        // - User settings: fieldsets "user-information"; "user-settings", "change-password"
+        // and "edit-keys" are kept, but groups are added to fieldset "user-settings":
+        //   - columns
+        //   - browse_defaults
+        // There are two possibilities to manage module features in settings:
+        // - make each module a group
+        // - or create new groups for each set of features: resource metadata,
+        // site and pages params, viewers, contributions, public browse, public
+        // resource, jobs to run…
+        // The second way is more readable for admin, but in most of the cases,
+        // features are very different, so there will be a group by module
+        // anyway. Similar to module config, but config is not end-user friendly
+        // (multiple pages).
+        // So for now, let each module choose during upgrade to v4.
+        // Nevertheless, to use group feature smartly, it is recommended to use
+        // a generic list of groups similar to the site settings ones.
+        // Maybe sub-groups may be interesting, but not possible for now.
+        // In practice, there is a new option to set in each fieldset the group
+        // where params are displayed.
+
+        // TODO Order element groups.
+        // TODO Move main params to site settings and user settings.
+
+        $fieldsetElementGroups = $fieldset->getOption('element_groups');
+        if ($fieldsetElementGroups) {
+            $form->setOption('element_groups', array_merge($form->getOption('element_groups') ?: [], $fieldsetElementGroups));
+        }
+
         // The user view is managed differently.
         if ($settingsType === 'user_settings') {
             // This process allows to save first level elements automatically.
             // @see \Omeka\Controller\Admin\UserController::editAction()
             $formFieldset = $form->get('user-settings');
+            foreach ($fieldset->getFieldsets() as $subFieldset) {
+                $formFieldset->add($subFieldset);
+            }
             foreach ($fieldset->getElements() as $element) {
                 $formFieldset->add($element);
             }
             $formFieldset->populateValues($data);
+            $fieldset = $formFieldset;
         } else {
-            $form->add($fieldset);
-            $form->get($space)->populateValues($data);
+            // Allow to save data and to manage modules compatible with
+            // Omeka S v3 and v4.
+            //
+            // In Omeka S v4, settings are no more de-nested, next to the new
+            // "element group" feature, where default elements are attached
+            // directly to the main form with a fake fieldset (not managed by
+            // laminas), without using the formCollection() option.
+            // So un-de-nested params are checked, but no more automatically
+            // saved.
+            // And when data is populated, it is not possible to determinate
+            // directly if the form is valid or not as a whole, because the
+            // check is done after the filling inside the controller.
+            // To manage this new feature, either remove fieldsets and attach
+            // elements directly to the form, either save elements via event
+            // "view.browse.before", where the form is available.
+            // This second way is simpler to manage modules compatible with
+            // Omeka S v3 and v4, but it is not possible because there is a
+            // redirect in the controller when post is successfull.
+            // So append all elements and sub-fieldsets on the root of the form.
+            if (version_compare(\Omeka\Module::VERSION, '4', '<')) {
+                $form->add($fieldset);
+                $form->get($space)->populateValues($data);
+            } else {
+                foreach ($fieldset->getFieldsets() as $subFieldset) {
+                    $form->add($subFieldset);
+                }
+                foreach ($fieldset->getElements() as $element) {
+                    $form->add($element);
+                }
+                $form->populateValues($data);
+                $fieldset = $form;
+            }
         }
 
-        return $form;
+        return $fieldset;
     }
 
     /**
@@ -503,7 +732,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      * @param array $values Specific values to populate, e.g. translated strings.
      * @param bool True if processed.
      */
-    protected function initDataToPopulate(SettingsInterface $settings, $settingsType, $id = null, array $values = [])
+    protected function initDataToPopulate(SettingsInterface $settings, string $settingsType, $id = null, iterable $values = []): bool
     {
         // This method is not in the interface, but is set for config, site and
         // user settings.
@@ -527,10 +756,10 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
             $stmt = $connection->executeQuery($sql, ['target_id' => $id]);
         } else {
             $sql = sprintf('SELECT id, value FROM %s', $settings->getTableName());
-            $stmt = $connection->query($sql);
+            $stmt = $connection->executeQuery($sql);
         }
 
-        $currentSettings = $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $currentSettings = $stmt->fetchAllKeyValue();
         $defaultSettings = $config[$space][$settingsType];
         // Skip settings that are arrays, because the fields "multi-checkbox"
         // and "multi-select" are removed when no value are selected, so it's
@@ -561,7 +790,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      * @param string $settingsType
      * @return array|null
      */
-    protected function prepareDataToPopulate(SettingsInterface $settings, $settingsType)
+    protected function prepareDataToPopulate(SettingsInterface $settings, string $settingsType): ?array
     {
         $config = $this->getConfig();
         $space = strtolower(static::NAMESPACE);
@@ -578,7 +807,6 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
             $val = $settings->get($name, is_array($value) ? [] : null);
             $data[$name] = $val;
         }
-
         return $data;
     }
 
@@ -587,55 +815,96 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * This method is distinct of checkDependencies() for performance purpose.
      *
-     * @throws ModuleCannotInstallException
+     * @return bool
      */
-    protected function checkDependency()
+    protected function checkDependency(): bool
     {
-        if (empty($this->dependency) || $this->isModuleActive($this->dependency)) {
-            return;
-        }
-
-        $services = $this->getServiceLocator();
-        $translator = $services->get('MvcTranslator');
-        $message = new Message(
-            $translator->translate('This module requires the module "%s".'), // @translate
-            $this->dependency
-        );
-        throw new ModuleCannotInstallException($message);
+        return empty($this->dependency)
+            || $this->isModuleActive($this->dependency);
     }
 
     /**
      * Check if the module has dependencies.
      *
-     * @throws ModuleCannotInstallException
+     * @return bool
      */
-    protected function checkDependencies()
+    protected function checkDependencies(): bool
     {
-        if (empty($this->dependencies) || $this->areModulesActive($this->dependencies)) {
-            return;
+        return empty($this->dependencies)
+            || $this->areModulesActive($this->dependencies);
+    }
+
+    /**
+     * Check the version of a module and return a boolean or throw an exception.
+     *
+     * @throws \Omeka\Module\Exception\ModuleCannotInstallException
+     */
+    protected function checkModuleAvailability(string $moduleName, ?string $version = null, bool $required = false, bool $exception = false): bool
+    {
+        $services = $this->getServiceLocator();
+        $module = $services->get('Omeka\ModuleManager')->getModule($moduleName);
+        if (!$module || !$this->isModuleActive($moduleName)) {
+            if (!$required) {
+                return true;
+            }
+            if (!$exception) {
+                return false;
+            }
+            // Else throw message below (required module with a version or not).
+        } elseif (!$version || version_compare($module->getIni('version') ?? '', $version, '>=')) {
+            return true;
+        } elseif (!$exception) {
+            return false;
+        }
+        $translator = $services->get('MvcTranslator');
+        if ($version) {
+            $message = new \Omeka\Stdlib\Message(
+                $translator->translate('This module requires the module "%1$s", version %2$s or above.'), // @translate
+                $moduleName, $version
+            );
+        } else {
+            $message = new \Omeka\Stdlib\Message(
+                $translator->translate('This module requires the module "%s".'), // @translate
+                $moduleName
+            );
+        }
+        throw new \Omeka\Module\Exception\ModuleCannotInstallException((string) $message);
+    }
+
+    /**
+     * Check the version of a module.
+     *
+     * It is recommended to use checkModuleAvailability(), that manages the fact
+     * that the module may be required or not.
+     */
+    protected function isModuleVersionAtLeast(string $module, string $version): bool
+    {
+        $services = $this->getServiceLocator();
+        /** @var \Omeka\Module\Manager $moduleManager */
+        $moduleManager = $services->get('Omeka\ModuleManager');
+        $module = $moduleManager->getModule($module);
+        if (!$module) {
+            return false;
         }
 
-        $services = $this->getServiceLocator();
-        $translator = $services->get('MvcTranslator');
-        $message = new Message(
-            $translator->translate('This module requires modules "%s".'), // @translate
-            implode('", "', $this->dependencies)
-        );
-        throw new ModuleCannotInstallException($message);
+        $moduleVersion = $module->getIni('version');
+        return $moduleVersion
+            ? version_compare($moduleVersion, $version, '>=')
+            : false;
     }
 
     /**
      * Check if a module is active.
      *
-     * @param string $moduleClass
+     * @param string $module
      * @return bool
      */
-    protected function isModuleActive($moduleClass)
+    protected function isModuleActive(string $module): bool
     {
         $services = $this->getServiceLocator();
         /** @var \Omeka\Module\Manager $moduleManager */
         $moduleManager = $services->get('Omeka\ModuleManager');
-        $module = $moduleManager->getModule($moduleClass);
+        $module = $moduleManager->getModule($module);
         return $module
             && $module->getState() === \Omeka\Module\Manager::STATE_ACTIVE;
     }
@@ -643,16 +912,16 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
     /**
      * Check if a list of modules are active.
      *
-     * @param array $moduleClasses
+     * @param array $modules
      * @return bool
      */
-    protected function areModulesActive(array $moduleClasses)
+    protected function areModulesActive(array $modules): bool
     {
         $services = $this->getServiceLocator();
         /** @var \Omeka\Module\Manager $moduleManager */
         $moduleManager = $services->get('Omeka\ModuleManager');
-        foreach ($moduleClasses as $moduleClass) {
-            $module = $moduleManager->getModule($moduleClass);
+        foreach ($modules as $module) {
+            $module = $moduleManager->getModule($module);
             if (!$module || $module->getState() !== \Omeka\Module\Manager::STATE_ACTIVE) {
                 return false;
             }
@@ -663,46 +932,49 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
     /**
      * Disable a module.
      *
-     * @param string $moduleClass
+     * @param string $module
+     * @return bool
      */
-    protected function disableModule($moduleClass)
+    protected function disableModule(string $module): bool
     {
         // Check if the module is enabled first to avoid an exception.
-        if (!$this->isModuleActive($moduleClass)) {
-            return;
+        if (!$this->isModuleActive($module)) {
+            return true;
         }
 
         // Check if the user is a global admin to avoid right issues.
         $services = $this->getServiceLocator();
         $user = $services->get('Omeka\AuthenticationService')->getIdentity();
         if (!$user || $user->getRole() !== \Omeka\Permissions\Acl::ROLE_GLOBAL_ADMIN) {
-            return;
+            return false;
         }
 
         /** @var \Omeka\Module\Manager $moduleManager */
         $moduleManager = $services->get('Omeka\ModuleManager');
-        $module = $moduleManager->getModule($moduleClass);
-        $moduleManager->deactivate($module);
+        $managedModule = $moduleManager->getModule($module);
+        $moduleManager->deactivate($managedModule);
 
         $translator = $services->get('MvcTranslator');
         $message = new \Omeka\Stdlib\Message(
             $translator->translate('The module "%s" was automatically deactivated because the dependencies are unavailable.'), // @translate
-            $moduleClass
+            $module
         );
-        $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
+        $messenger = $services->get('ControllerPluginManager')->get('messenger');
         $messenger->addWarning($message);
 
         $logger = $services->get('Omeka\Logger');
         $logger->warn($message);
+        return true;
     }
 
     /**
      * Get each line of a string separately.
      *
+     * @deprecated Since 3.3.22. Use \Omeka\Form\Element\ArrayTextarea.
      * @param string $string
      * @return array
      */
-    public function stringToList($string)
+    public function stringToList($string): array
     {
         return array_filter(array_map('trim', explode("\n", $this->fixEndOfLine($string))), 'strlen');
     }
@@ -712,10 +984,11 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
      *
      * This method fixes Windows and Apple copy/paste from a textarea input.
      *
+     * @deprecated Since 3.3.22. Use \Omeka\Form\Element\ArrayTextarea.
      * @param string $string
      * @return string
      */
-    protected function fixEndOfLine($string)
+    protected function fixEndOfLine($string): string
     {
         return str_replace(["\r\n", "\n\r", "\r"], ["\n", "\n", "\n"], $string);
     }
