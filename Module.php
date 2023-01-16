@@ -88,8 +88,16 @@ class Module extends AbstractModule
         $installResources = $installResources();
 
         if (!empty($_POST['remove-template'])) {
-            $resourceTemplate = 'Génération';
-            $installResources->removeResourceTemplate($resourceTemplate);
+            $resourceTemplates = [
+                'Génération',
+                'genex_Concept',
+                'genex_Conjugaison',
+                'genex_Generateur',
+                'genex_Term',
+            ];
+            foreach ($resourceTemplates as $resourceTemplate) {
+                $installResources->removeResourceTemplate($resourceTemplate);
+            }
         }
     }
 
@@ -104,7 +112,13 @@ class Module extends AbstractModule
         $serviceLocator = $this->getServiceLocator();
         $t = $serviceLocator->get('MvcTranslator');
 
-        $resourceTemplates = 'Génération';
+        $resourceTemplates = [
+            'Génération',
+            'genex_Concept',
+            'genex_Conjugaison',
+            'genex_Generateur',
+            'genex_Term',
+        ];
 
         $html = '<p>';
         $html .= '<strong>';
@@ -117,13 +131,14 @@ class Module extends AbstractModule
         $html .= '</p>';
 
         $html .= '<p>';
-        $html .= sprintf(
-            $t->translate('If checked, the resource templates "%s" will be removed too. The resource template of the resources that use it will be reset.'), // @translate
-            $resourceTemplates
-        );
+        $html .= '<p>';
+        $html .= $t->translate('If checked, the resource templates will be removed too. The resource template of the resources that use it will be reset.'); // @translate
         $html .= '</p>';
         $html .= '<label><input name="remove-template" type="checkbox" form="confirmform">';
-        $html .= sprintf($t->translate('Remove the resource templates "%s"'), $resourceTemplates); // @translate
+        $html .= $t->translate('Remove the resource templates :<br/>'); // @translate
+        foreach ($resourceTemplates as $rt) {
+            $html .= '"' . $rt . '"<br/>'; // @translate
+        }
         $html .= '</label>';
 
         echo $html;
