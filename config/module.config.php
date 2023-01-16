@@ -62,7 +62,7 @@ return [
         'AdminResource' => [
             'generation' => [
                 'label' => 'Generations', // @translate
-                'class' => 'generations fas fa-recycle',
+                'class' => 'o-icon- generations fas fa-recycle',
                 'route' => 'admin/generation/default',
                 'resource' => Controller\Admin\GenerationController::class,
                 'privilege' => 'browse',
