@@ -850,7 +850,7 @@ abstract class AbstractModule extends \Omeka\Module\AbstractModule
             if (!$exception) {
                 return false;
             }
-            // Else throw message below (required module with a version or not).
+        // Else throw message below (required module with a version or not).
         } elseif (!$version || version_compare($module->getIni('version') ?? '', $version, '>=')) {
             return true;
         } elseif (!$exception) {

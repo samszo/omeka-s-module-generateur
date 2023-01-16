@@ -1,9 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Mvc\Controller\Plugin;
 
 use Generateur\Api\Representation\GenerationRepresentation;
-use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
+use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 
 class ResourceGenerations extends AbstractPlugin
 {

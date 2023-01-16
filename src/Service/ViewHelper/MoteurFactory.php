@@ -1,10 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Service\ViewHelper;
 
-use Generateur\View\Helper\Moteur;
+use Generateur\View\Helper\MoteurViewHelper;
 use Interop\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
-use Generateur\View\Helper\MoteurViewHelper;
 
 class MoteurFactory implements FactoryInterface
 {

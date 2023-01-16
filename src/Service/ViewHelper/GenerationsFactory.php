@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Service\ViewHelper;
 
 use Generateur\View\Helper\Generations;

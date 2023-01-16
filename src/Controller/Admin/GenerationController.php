@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Controller\Admin;
 
 use Generateur\Entity\Generation;
@@ -7,17 +7,16 @@ use Generateur\Form\QuickSearchForm;
 use Generateur\Form\ResourceForm;
 use Generateur\Generateur\Moteur;
 
-use Omeka\Form\ConfirmForm;
-use Omeka\Mvc\Exception\NotFoundException;
-use Omeka\Stdlib\Message;
 use Laminas\Http\Response;
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\View\Model\JsonModel;
 use Laminas\View\Model\ViewModel;
+use Omeka\Form\ConfirmForm;
+use Omeka\Mvc\Exception\NotFoundException;
+use Omeka\Stdlib\Message;
 
 class GenerationController extends AbstractActionController
 {
-  
     public function searchAction()
     {
         $view = new ViewModel;
@@ -163,17 +162,17 @@ class GenerationController extends AbstractActionController
                 $this->messenger()->addError('Resource template "Génération" not found'); // @translate
                 return $this->redirect()->toUrl($redirect);
             }
-        }        
+        }
         $data['o:resource_template']['o:id'] = $resourceTemplate->id();
-
 
         //generate data
         $cache = boolval($data['bCache']);
-        $g = new Moteur($cache,$this->api(),$this->logger());
-        if(isset($data['submitStructure']))
+        $g = new Moteur($cache, $this->api(), $this->logger());
+        if (isset($data['submitStructure'])) {
             $g->structure($data);
-        else
+        } else {
             $g->generate($data);
+        }
 
         //$oItem = $api->read('items', $data['o:resource']['o:id'])->getContent();
         //$gReseau = $g->getConceptReseau($oItem);

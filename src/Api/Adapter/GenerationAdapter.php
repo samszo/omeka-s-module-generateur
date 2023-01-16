@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Api\Adapter;
 
 use Doctrine\ORM\QueryBuilder;
@@ -42,7 +42,7 @@ class GenerationAdapter extends AbstractResourceEntityAdapter
         return \Generateur\Entity\Generation::class;
     }
 
-    public function buildQuery(QueryBuilder $qb, array $query)
+    public function buildQuery(QueryBuilder $qb, array $query): void
     {
         parent::buildQuery($qb, $query);
 
@@ -62,7 +62,7 @@ class GenerationAdapter extends AbstractResourceEntityAdapter
         $this->searchDateTime($qb, $query);
     }
 
-    public function validateRequest(Request $request, ErrorStore $errorStore)
+    public function validateRequest(Request $request, ErrorStore $errorStore): void
     {
         $data = $request->getContent();
         if (empty($data['o:resource'])) {
@@ -70,7 +70,7 @@ class GenerationAdapter extends AbstractResourceEntityAdapter
         }
     }
 
-    public function validateEntity(EntityInterface $entity, ErrorStore $errorStore)
+    public function validateEntity(EntityInterface $entity, ErrorStore $errorStore): void
     {
         if (!$entity->getResource()) {
             $errorStore->addError('o:resource', 'A Generation must be linked to a resource.'); // @translate
@@ -82,7 +82,7 @@ class GenerationAdapter extends AbstractResourceEntityAdapter
         Request $request,
         EntityInterface $entity,
         ErrorStore $errorStore
-    ) {
+    ): void {
         $data = $request->getContent();
 
         // The resource cannot be changed.

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * Copyright Daniel Berthereau, 2017-2020
@@ -38,20 +38,20 @@ if (!class_exists(\Generic\AbstractModule::class)) {
 use Generateur\Entity\Generation;
 use Generateur\Permissions\Acl;
 use Generic\AbstractModule;
-use Omeka\Api\Representation\AbstractEntityRepresentation;
-use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
-use Omeka\Api\Representation\ItemRepresentation;
-use Omeka\Api\Representation\UserRepresentation;
 use Laminas\EventManager\Event;
 use Laminas\EventManager\SharedEventManagerInterface;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Permissions\Acl\Acl as LaminasAcl;
+use Omeka\Api\Representation\AbstractEntityRepresentation;
+use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
+use Omeka\Api\Representation\ItemRepresentation;
+use Omeka\Api\Representation\UserRepresentation;
 
 class Module extends AbstractModule
 {
     const NAMESPACE = __NAMESPACE__;
 
-    public function onBootstrap(MvcEvent $event)
+    public function onBootstrap(MvcEvent $event): void
     {
         parent::onBootstrap($event);
         // TODO Add filters (don't display when resource is private, like media?).
@@ -93,7 +93,7 @@ class Module extends AbstractModule
         }
     }
 
-    public function warnUninstall(Event $event)
+    public function warnUninstall(Event $event): void
     {
         $view = $event->getTarget();
         $module = $view->vars()->module;
@@ -132,7 +132,7 @@ class Module extends AbstractModule
     /**
      * Add ACL role and rules for this module.
      */
-    protected function addAclRoleAndRules()
+    protected function addAclRoleAndRules(): void
     {
         /** @var \Omeka\Permissions\Acl $acl */
         $services = $this->getServiceLocator();
@@ -171,7 +171,7 @@ class Module extends AbstractModule
      *
      * @param LaminasAcl $acl
      */
-    protected function addRulesForVisitors(LaminasAcl $acl)
+    protected function addRulesForVisitors(LaminasAcl $acl): void
     {
         $acl
             ->allow(
@@ -196,7 +196,7 @@ class Module extends AbstractModule
      *
      * @param LaminasAcl $acl
      */
-    protected function addRulesForVisitorCreators(LaminasAcl $acl)
+    protected function addRulesForVisitorCreators(LaminasAcl $acl): void
     {
         $acl
             ->allow(
@@ -221,7 +221,7 @@ class Module extends AbstractModule
      *
      * @param LaminasAcl $acl
      */
-    protected function addRulesForCreators(LaminasAcl $acl)
+    protected function addRulesForCreators(LaminasAcl $acl): void
     {
         $roles = [
             \Omeka\Permissions\Acl::ROLE_RESEARCHER,
@@ -260,7 +260,7 @@ class Module extends AbstractModule
      *
      * @param LaminasAcl $acl
      */
-    protected function addRulesForApprobators(LaminasAcl $acl)
+    protected function addRulesForApprobators(LaminasAcl $acl): void
     {
         // Admin are approbators too, but rights are set below globally.
         $roles = [
@@ -334,7 +334,7 @@ class Module extends AbstractModule
      *
      * @param LaminasAcl $acl
      */
-    protected function addRulesForAdmins(LaminasAcl $acl)
+    protected function addRulesForAdmins(LaminasAcl $acl): void
     {
         $roles = [
             \Omeka\Permissions\Acl::ROLE_GLOBAL_ADMIN,
@@ -352,7 +352,7 @@ class Module extends AbstractModule
             );
     }
 
-    public function attachListeners(SharedEventManagerInterface $sharedEventManager)
+    public function attachListeners(SharedEventManagerInterface $sharedEventManager): void
     {
         // Add the Generation to the representation.
         $representations = [
@@ -451,7 +451,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function filterJsonLd(Event $event)
+    public function filterJsonLd(Event $event): void
     {
         if (!$this->userCanRead()) {
             return;
@@ -475,7 +475,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function displayAdvancedSearchGeneration(Event $event)
+    public function displayAdvancedSearchGeneration(Event $event): void
     {
         $query = $event->getParam('query', []);
         $query['datetime'] = isset($query['datetime']) ? $query['datetime'] : '';
@@ -494,7 +494,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function filterSearchFiltersGeneration(Event $event)
+    public function filterSearchFiltersGeneration(Event $event): void
     {
         $query = $event->getParam('query', []);
         $view = $event->getTarget();
@@ -574,7 +574,7 @@ class Module extends AbstractModule
         $event->setParam('filters', $filters);
     }
 
-    public function addCsvImportFormElements(Event $event)
+    public function addCsvImportFormElements(Event $event): void
     {
         /** @var \CSVImport\Form\MappingForm $form */
         $form = $event->getTarget();
@@ -603,7 +603,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function addHeadersAdmin(Event $event)
+    public function addHeadersAdmin(Event $event): void
     {
         // Hacked, because the admin layout doesn't use a partial or a trigger
         // for the search engine.
@@ -625,7 +625,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function addTab(Event $event)
+    public function addTab(Event $event): void
     {
         $sectionNav = $event->getParam('section_nav');
         $sectionNav['generateur'] = 'Generations'; // @translate
@@ -637,7 +637,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function displayListAndForm(Event $event)
+    public function displayListAndForm(Event $event): void
     {
         $resource = $event->getTarget()->resource;
         $acl = $this->getServiceLocator()->get('Omeka\Acl');
@@ -656,7 +656,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function displayList(Event $event)
+    public function displayList(Event $event): void
     {
         echo '<div id="generateur" class="section generateur">';
         $vars = $event->getTarget()->vars();
@@ -682,7 +682,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function viewDetails(Event $event)
+    public function viewDetails(Event $event): void
     {
         $representation = $event->getParam('entity');
         // TODO Use a paginator to limit and display all generations dynamically in the details view (using api).
@@ -694,7 +694,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function displayForm(Event $event)
+    public function displayForm(Event $event): void
     {
         $view = $event->getTarget();
         /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
@@ -740,7 +740,7 @@ class Module extends AbstractModule
         AbstractResourceEntityRepresentation $resource,
         $listAsDiv = false,
         array $query = []
-    ) {
+    ): void {
         $services = $this->getServiceLocator();
         $controllerPlugins = $services->get('ControllerPluginManager');
         $resourceGenerationsPlugin = $controllerPlugins->get('resourceGenerations');

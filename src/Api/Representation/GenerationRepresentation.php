@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Api\Representation;
 
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
@@ -70,7 +70,7 @@ class GenerationRepresentation extends AbstractResourceEntityRepresentation
         );
     }
 
-    public function displayTitle($default = null, $lang = NULL)
+    public function displayTitle($default = null, $lang = null)
     {
         $title = $this->title();
         if (null !== $title) {
