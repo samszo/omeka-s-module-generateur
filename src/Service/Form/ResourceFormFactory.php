@@ -2,7 +2,7 @@
 namespace Generateur\Service\Form;
 
 use Generateur\Form\ResourceForm;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 
 class ResourceFormFactory implements FactoryInterface

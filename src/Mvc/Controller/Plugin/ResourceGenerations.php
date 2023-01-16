@@ -3,7 +3,7 @@ namespace Generateur\Mvc\Controller\Plugin;
 
 use Generateur\Api\Representation\GenerationRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
-use Zend\Mvc\Controller\Plugin\AbstractPlugin;
+use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
 
 class ResourceGenerations extends AbstractPlugin
 {

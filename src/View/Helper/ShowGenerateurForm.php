@@ -4,7 +4,7 @@ namespace Generateur\View\Helper;
 use Generateur\Form\GenerateurForm;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Entity\Item;
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 
 class ShowGenerateurForm extends AbstractHelper
 {

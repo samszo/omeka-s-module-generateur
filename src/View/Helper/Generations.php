@@ -3,7 +3,7 @@ namespace Generateur\View\Helper;
 
 use Generateur\Mvc\Controller\Plugin\ResourceGenerations;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 
 class Generations extends AbstractHelper
 {

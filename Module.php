@@ -42,10 +42,10 @@ use Omeka\Api\Representation\AbstractEntityRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Api\Representation\ItemRepresentation;
 use Omeka\Api\Representation\UserRepresentation;
-use Zend\EventManager\Event;
-use Zend\EventManager\SharedEventManagerInterface;
-use Zend\Mvc\MvcEvent;
-use Zend\Permissions\Acl\Acl as ZendAcl;
+use Laminas\EventManager\Event;
+use Laminas\EventManager\SharedEventManagerInterface;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Permissions\Acl\Acl as LaminasAcl;
 
 class Module extends AbstractModule
 {
@@ -60,7 +60,7 @@ class Module extends AbstractModule
         $this->addAclRoleAndRules();
     }
 
-    protected function preInstall()
+    protected function preInstall():void
     {
         $services = $this->getServiceLocator();
         $module = $services->get('Omeka\ModuleManager')->getModule('Generic');
@@ -74,7 +74,7 @@ class Module extends AbstractModule
         }
     }
 
-    protected function postUninstall()
+    protected function postUninstall():void
     {
         $services = $this->getServiceLocator();
 
@@ -169,9 +169,9 @@ class Module extends AbstractModule
      *
      * @todo Add rights to update generation (flag only).
      *
-     * @param ZendAcl $acl
+     * @param LaminasAcl $acl
      */
-    protected function addRulesForVisitors(ZendAcl $acl)
+    protected function addRulesForVisitors(LaminasAcl $acl)
     {
         $acl
             ->allow(
@@ -194,9 +194,9 @@ class Module extends AbstractModule
     /**
      * Add ACL rules for visitors who can generate.
      *
-     * @param ZendAcl $acl
+     * @param LaminasAcl $acl
      */
-    protected function addRulesForVisitorCreators(ZendAcl $acl)
+    protected function addRulesForVisitorCreators(LaminasAcl $acl)
     {
         $acl
             ->allow(
@@ -219,9 +219,9 @@ class Module extends AbstractModule
     /**
      * Add ACL rules for users who can generate (not visitor).
      *
-     * @param ZendAcl $acl
+     * @param LaminasAcl $acl
      */
-    protected function addRulesForCreators(ZendAcl $acl)
+    protected function addRulesForCreators(LaminasAcl $acl)
     {
         $roles = [
             \Omeka\Permissions\Acl::ROLE_RESEARCHER,
@@ -258,9 +258,9 @@ class Module extends AbstractModule
     /**
      * Add ACL rules for reviewers and editors (approbators).
      *
-     * @param ZendAcl $acl
+     * @param LaminasAcl $acl
      */
-    protected function addRulesForApprobators(ZendAcl $acl)
+    protected function addRulesForApprobators(LaminasAcl $acl)
     {
         // Admin are approbators too, but rights are set below globally.
         $roles = [
@@ -332,9 +332,9 @@ class Module extends AbstractModule
     /**
      * Add ACL rules for approbators.
      *
-     * @param ZendAcl $acl
+     * @param LaminasAcl $acl
      */
-    protected function addRulesForAdmins(ZendAcl $acl)
+    protected function addRulesForAdmins(LaminasAcl $acl)
     {
         $roles = [
             \Omeka\Permissions\Acl::ROLE_GLOBAL_ADMIN,

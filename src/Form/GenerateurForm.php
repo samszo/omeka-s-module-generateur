@@ -2,8 +2,8 @@
 namespace Generateur\Form;
 
 use Omeka\View\Helper\Api;
-use Zend\Form\Element;
-use Zend\Form\Form;
+use Laminas\Form\Element;
+use Laminas\Form\Form;
 
 class GenerateurForm extends Form
 {
@@ -59,10 +59,20 @@ class GenerateurForm extends Form
                 'type' => Element\Submit::class,
                 'name' => 'submit',
                 'attributes' => [
-                    'value' => 'Generate!', // @translate
+                    'value' => 'Generate !', // @translate
                     'class' => 'generations fas fa-recycle',
                 ],
             ])
+
+            ->add([
+                'type' => Element\Submit::class,
+                'name' => 'submitStructure',
+                'attributes' => [
+                    'value' => 'Structure !', // @translate
+                    'class' => 'generations fas fa-wrench',
+                ],
+            ])
+
         ;
     }
 

@@ -11,3 +11,4 @@ node_modules
 composer.phar
 debug.log
 data/test.json
+cache/

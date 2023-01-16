@@ -29,12 +29,15 @@ return [
     'view_helpers' => [
         'invokables' => [
             'normalizeDateTimeQuery' => View\Helper\NormalizeDateTimeQuery::class,
+            'MoteurViewHelper' => View\Helper\MoteurViewHelper::class,
         ],
         'factories' => [
             'showGenerateurForm' => Service\ViewHelper\ShowGenerateurFormFactory::class,
             'generations' => Service\ViewHelper\GenerationsFactory::class,
+            'MoteurFactory' => Service\ViewHelper\MoteurFactory::class,
         ],
     ],
+
     'form_elements' => [
         'factories' => [
             Form\GenerateurForm::class => Service\Form\GenerateurFormFactory::class,
@@ -83,7 +86,7 @@ return [
             'site' => [
                 'child_routes' => [
                     'generation' => [
-                        'type' => \Zend\Router\Http\Literal::class,
+                        'type' => \Laminas\Router\Http\Literal::class,
                         'options' => [
                             'route' => '/generation',
                             'defaults' => [
@@ -96,7 +99,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'default' => [
-                                'type' => \Zend\Router\Http\Segment::class,
+                                'type' => \Laminas\Router\Http\Segment::class,
                                 'options' => [
                                     'route' => '/:action',
                                     'constraints' => [
@@ -108,7 +111,7 @@ return [
                                 ],
                             ],
                             'id' => [
-                                'type' => \Zend\Router\Http\Segment::class,
+                                'type' => \Laminas\Router\Http\Segment::class,
                                 'options' => [
                                     'route' => '/:id[/:action]',
                                     'constraints' => [
@@ -127,7 +130,7 @@ return [
             'admin' => [
                 'child_routes' => [
                     'generation' => [
-                        'type' => \Zend\Router\Http\Literal::class,
+                        'type' => \Laminas\Router\Http\Literal::class,
                         'options' => [
                             'route' => '/generation',
                             'defaults' => [
@@ -140,7 +143,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'default' => [
-                                'type' => \Zend\Router\Http\Segment::class,
+                                'type' => \Laminas\Router\Http\Segment::class,
                                 'options' => [
                                     'route' => '/:action',
                                     'constraints' => [
@@ -152,7 +155,7 @@ return [
                                 ],
                             ],
                             'id' => [
-                                'type' => \Zend\Router\Http\Segment::class,
+                                'type' => \Laminas\Router\Http\Segment::class,
                                 'options' => [
                                     'route' => '/:id[/:action]',
                                     'constraints' => [
