@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-11 00:00+0000\n"
+"POT-Creation-Date: 2023-01-16 00:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,66 +22,60 @@ msgstr ""
 msgid "This module requires the module \"%s\", version %s or above."
 msgstr ""
 
-#: Module.php:111
+#: Module.php:125
 msgid "WARNING"
 msgstr ""
 
-#: Module.php:116
+#: Module.php:130
 msgid "All the generations will be removed."
 msgstr ""
 
-#: Module.php:121
-#, php-format
+#: Module.php:135
 msgid ""
-"If checked, the resource templates \"%s\" will be removed too. The resource "
+"If checked, the resource templates will be removed too. The resource "
 "template of the resources that use it will be reset."
 msgstr ""
 
-#: Module.php:126
-#, php-format
-msgid "Remove the resource templates \"%s\""
+#: Module.php:138
+msgid "Remove the resource templates :<br/>"
 msgstr ""
 
-#: Module.php:537 Module.php:544
+#: Module.php:552 Module.php:559
 #: view/common/advanced-search/date-time-generation.phtml:77
 msgid "after"
 msgstr ""
 
-#: Module.php:538 Module.php:543
+#: Module.php:553 Module.php:558
 #: view/common/advanced-search/date-time-generation.phtml:78
 msgid "after or on"
 msgstr ""
 
-#: Module.php:539 Module.php:545
+#: Module.php:554 Module.php:560
 #: view/common/advanced-search/date-time-generation.phtml:79
 msgid "on"
 msgstr ""
 
-#: Module.php:540 Module.php:546
+#: Module.php:555 Module.php:561
 #: view/common/advanced-search/date-time-generation.phtml:80
 msgid "not on"
 msgstr ""
 
-#: Module.php:541 Module.php:547
+#: Module.php:556 Module.php:562
 #: view/common/advanced-search/date-time-generation.phtml:81
 msgid "before or on"
 msgstr ""
 
-#: Module.php:542 Module.php:548
+#: Module.php:557 Module.php:563
 #: view/common/advanced-search/date-time-generation.phtml:82
 msgid "before"
 msgstr ""
 
-#: Module.php:549 view/common/advanced-search/date-time-generation.phtml:83
+#: Module.php:564 view/common/advanced-search/date-time-generation.phtml:83
 msgid "has any date / time"
 msgstr ""
 
-#: Module.php:550 view/common/advanced-search/date-time-generation.phtml:84
+#: Module.php:565 view/common/advanced-search/date-time-generation.phtml:84
 msgid "has no date / time"
-msgstr ""
-
-#: Module.php:560
-msgid "Modified"
 msgstr ""
 
 #: src/Api/Representation/GenerationRepresentation.php:82
@@ -90,29 +84,50 @@ msgstr ""
 msgid "[Generation #%d]"
 msgstr ""
 
-#: src/Generic/AbstractModule.php:598
+#: src/Generic/AbstractModule.php:80 src/Generic/AbstractModule.php:88
+#: src/Generic/AbstractModule.php:867
 #, php-format
 msgid "This module requires the module \"%s\"."
 msgstr ""
 
-#: src/Generic/AbstractModule.php:618
+#: src/Generic/AbstractModule.php:93
 #, php-format
 msgid "This module requires modules \"%s\"."
 msgstr ""
 
-#: src/Generic/AbstractModule.php:686
+#: src/Generic/AbstractModule.php:101
+msgid "This module has resources that cannot be installed."
+msgstr ""
+
+#: src/Generic/AbstractModule.php:108
+msgid ""
+"This module cannot install its tables, because they exist already. Try to "
+"remove them first."
+msgstr ""
+
+#: src/Generic/AbstractModule.php:375
+#, php-format
+msgid "The module removed tables \"%s\" from a previous broken install."
+msgstr ""
+
+#: src/Generic/AbstractModule.php:862
+#, php-format
+msgid "This module requires the module \"%1$s\", version %2$s or above."
+msgstr ""
+
+#: src/Generic/AbstractModule.php:959
 #, php-format
 msgid ""
 "The module \"%s\" was automatically deactivated because the dependencies are "
 "unavailable."
 msgstr ""
 
-#: view/common/admin/generation-resource-list.phtml:24
+#: view/common/admin/generation-resource-list.phtml:23
 #: view/common/site/generation-resource.phtml:27
 msgid "There are no generations for this resource."
 msgstr ""
 
-#: view/common/admin/generation-resource-list.phtml:34
+#: view/common/admin/generation-resource-list.phtml:33
 #: view/common/site/generation-resource.phtml:37
 #: view/generateur/admin/generation/browse.phtml:140
 #: view/generateur/admin/generation/show-details.phtml:43
@@ -121,16 +136,16 @@ msgstr ""
 msgid "[removed]"
 msgstr ""
 
-#: view/common/admin/generation-resource-list.phtml:42
+#: view/common/admin/generation-resource-list.phtml:41
 msgid "Show generation"
 msgstr ""
 
-#: view/common/admin/generation-resource-list.phtml:48
+#: view/common/admin/generation-resource-list.phtml:47
 #: view/generateur/admin/generation/show.phtml:25
 msgid "Edit generation"
 msgstr ""
 
-#: view/common/admin/generation-resource-list.phtml:60
+#: view/common/admin/generation-resource-list.phtml:59
 msgid "Delete generation"
 msgstr ""
 
@@ -293,16 +308,176 @@ msgstr ""
 msgid "(public)"
 msgstr ""
 
-#: src/Form/GenerateurForm.php:39
-msgid "Is public"
+#: Module.php:140
+msgid "\"<br/>"
 msgstr ""
 
-#: src/Form/GenerateurForm.php:50
-msgid "Generate!"
+#: src/Generic/InstallResources.php:84
+#, php-format
+msgid ""
+"An error occured when loading vocabulary \"%s\": file has no json content."
+msgstr ""
+
+#: src/Generic/InstallResources.php:91
+#, php-format
+msgid ""
+"An error occured when adding the prefix \"%s\": another vocabulary exists. "
+"Resolve the conflict before installing this module."
+msgstr ""
+
+#: src/Generic/InstallResources.php:103
+#, php-format
+msgid ""
+"A custom vocab exists for \"%s\". Remove it or rename it before installing "
+"this module."
+msgstr ""
+
+#: src/Generic/InstallResources.php:114
+#, php-format
+msgid ""
+"A resource template exists for %s. Rename it or remove it before installing "
+"this module."
+msgstr ""
+
+#: src/Generic/InstallResources.php:318
+#, php-format
+msgid "The vocabulary \"%s\" was already installed and was kept."
+msgstr ""
+
+#: src/Generic/InstallResources.php:327
+#, php-format
+msgid ""
+"An error occured when adding the prefix \"%s\": another vocabulary exists "
+"with the same prefix. Resolve the conflict before installing this module."
+msgstr ""
+
+#: src/Generic/InstallResources.php:339
+#, php-format
+msgid ""
+"An error occured when adding the prefix \"%s\" and the associated "
+"properties: %s"
+msgstr ""
+
+#: src/Generic/InstallResources.php:419 src/Generic/InstallResources.php:429
+#, php-format
+msgid ""
+"An error occured when updating vocabulary \"%s\" and the associated "
+"properties: %s"
+msgstr ""
+
+#: src/Generic/InstallResources.php:523
+#, php-format
+msgid "The following \"%1$s\" of the vocabulary \"%2$s\" were replaced: %3$s"
+msgstr ""
+
+#: src/Generic/InstallResources.php:532
+msgid ""
+"Resources, values and templates were updated, but you may check settings "
+"where the old ones were used."
+msgstr ""
+
+#: src/Generic/InstallResources.php:558
+#, php-format
+msgid "The resource template named \"%s\" is already available and is skipped."
+msgstr ""
+
+#: src/Generic/InstallResources.php:830
+#, php-format
+msgid "The custom vocab named \"%s\" is not available."
+msgstr ""
+
+#: src/Generic/InstallResources.php:1039
+msgid "No file or url set for the vocabulary."
+msgstr ""
+
+#: src/Generic/InstallResources.php:1049
+#, php-format
+msgid "The file \"%s\" cannot be read. Check the url."
+msgstr ""
+
+#: src/Generic/InstallResources.php:1059
+#, php-format
+msgid "The file \"%s\" cannot be read. Check the file."
+msgstr ""
+
+#: src/Generic/InstallResources.php:1080
+msgid "A vocabulary must have a namespace uri and a prefix."
 msgstr ""
 
 #: src/Form/QuickSearchForm.php:31
 msgid "Set a date with optional comparator…"
+msgstr ""
+
+#: src/Form/GenerateurForm.php:50
+msgid "Use cache"
+msgstr ""
+
+#: src/Form/GenerateurForm.php:61
+msgid "Generate !"
+msgstr ""
+
+#: src/Form/GenerateurForm.php:70
+msgid "Structure !"
+msgstr ""
+
+#: src/Api/Adapter/GenerationAdapter.php:81
+msgid "The resource must be set."
+msgstr ""
+
+#: src/Api/Adapter/GenerationAdapter.php:88
+msgid "A Generation must be linked to a resource."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:104
+msgid "Only a resource can be generated."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:112
+#: src/Controller/Admin/GenerationController.php:114
+msgid "Unauthorized access."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:125
+#: src/Controller/Admin/GenerationController.php:127
+#: src/Controller/Admin/GenerationController.php:137
+msgid "Resource not found."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:139
+msgid "Resource not found"
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:160
+msgid "Resource template \"Génération\" not found."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:162
+msgid "Resource template \"Génération\" not found"
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:205
+#, php-format
+msgid "Generation #%1$d successfully generated for resource #%2$d."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:247
+msgid "Generation successfully updated"
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:288
+msgid "Generation successfully deleted."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:324
+msgid "You must select at least one generation to batch delete."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:333
+msgid "Generations successfully deleted."
+msgstr ""
+
+#: src/Controller/Admin/GenerationController.php:343
+msgid "Delete of all generations is not supported currently."
 msgstr ""
 
 #: src/Mapping/GenerationMapping.php:9
@@ -319,121 +494,12 @@ msgstr ""
 msgid "\"%s\" (%s) is not a valid generation."
 msgstr ""
 
-#: src/Controller/Admin/GenerationController.php:102
-msgid "Only a resource can be generated."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:110
-#: src/Controller/Admin/GenerationController.php:112
-msgid "Unauthorized access."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:123
-#: src/Controller/Admin/GenerationController.php:125
-#: src/Controller/Admin/GenerationController.php:135
-msgid "Resource not found."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:137
-msgid "Resource not found"
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:158
-msgid "Resource template \"Génération\" not found."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:160
-msgid "Resource template \"Génération\" not found"
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:191
+#: data/scripts/upgrade_vocabulary.php:15
 #, php-format
-msgid "Generation #%1$d successfully generated for resource #%2$d."
+msgid "This module requires module %s version %s or greater."
 msgstr ""
 
-#: src/Controller/Admin/GenerationController.php:233
-msgid "Generation successfully updated"
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:274
-msgid "Generation successfully deleted."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:310
-msgid "You must select at least one generation to batch delete."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:319
-msgid "Generations successfully deleted."
-msgstr ""
-
-#: src/Controller/Admin/GenerationController.php:329
-msgid "Delete of all generations is not supported currently."
-msgstr ""
-
-#: src/Api/Adapter/GenerationAdapter.php:69
-msgid "The resource must be set."
-msgstr ""
-
-#: src/Api/Adapter/GenerationAdapter.php:76
-msgid "A Generation must be linked to a resource."
-msgstr ""
-
-#: src/Generic/InstallResources.php:163
+#: data/scripts/upgrade_vocabulary.php:31
 #, php-format
-msgid "The file \"%s\" cannot be read. Check your file system."
-msgstr ""
-
-#: src/Generic/InstallResources.php:189
-#, php-format
-msgid ""
-"An error occured when adding the prefix \"%s\": another vocabulary exists. "
-"Resolve the conflict before installing this module."
-msgstr ""
-
-#: src/Generic/InstallResources.php:219
-#, php-format
-msgid ""
-"A resource template named \"%s\" exists: rename it or remove it before "
-"installing this module."
-msgstr ""
-
-#: src/Generic/InstallResources.php:247
-msgid "The current version of this module requires the module Custom Vocab."
-msgstr ""
-
-#: src/Generic/InstallResources.php:254
-#, php-format
-msgid ""
-"A custom vocab named \"%s\" exists and has not the needed language (\"%s\"): "
-"check it or remove it before installing this module."
-msgstr ""
-
-#: src/Generic/InstallResources.php:303
-#, php-format
-msgid "The vocabulary \"%s\" was already installed and was kept."
-msgstr ""
-
-#: src/Generic/InstallResources.php:313
-#, php-format
-msgid ""
-"An error occured when adding the prefix \"%s\": another vocabulary exists "
-"with the same prefix. Resolve the conflict before installing this module."
-msgstr ""
-
-#: src/Generic/InstallResources.php:333
-#, php-format
-msgid ""
-"An error occured when adding the prefix \"%s\" and the associated "
-"properties: %s"
-msgstr ""
-
-#: src/Generic/InstallResources.php:363
-#, php-format
-msgid "The resource template named \"%s\" is already available and is skipped."
-msgstr ""
-
-#: src/Generic/InstallResources.php:388 src/Generic/InstallResources.php:549
-#, php-format
-msgid "The custom vocab named \"%s\" is not available."
+msgid "The vocabulary \"%s\" was updated successfully."
 msgstr ""
