@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\View\Helper;
 
 use Doctrine\ORM\Query\Expr\Comparison;

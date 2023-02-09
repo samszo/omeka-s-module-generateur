@@ -1,9 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Form;
 
-use Omeka\View\Helper\Api;
 use Laminas\Form\Element;
 use Laminas\Form\Form;
+use Omeka\View\Helper\Api;
 
 class GenerateurForm extends Form
 {
@@ -12,7 +12,7 @@ class GenerateurForm extends Form
      */
     protected $api;
 
-    public function init()
+    public function init(): void
     {
         // TODO Move all static params into generateur controller?
         // TODO Convert with fieldsets to allow check via getData().
@@ -54,7 +54,6 @@ class GenerateurForm extends Form
                 ],
             ])
 
-
             ->add([
                 'type' => Element\Submit::class,
                 'name' => 'submit',
@@ -79,7 +78,7 @@ class GenerateurForm extends Form
     /**
      * @param Api $api
      */
-    public function setApi(Api $api)
+    public function setApi(Api $api): void
     {
         $this->api = $api;
     }

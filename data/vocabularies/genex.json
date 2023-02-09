@@ -6,6 +6,8 @@
         "o:comment": "Générateur pour cultiver ses connaissances."
     },
     "strategy": "file",
-    "file": "genex.ttl",
-    "format": "turtle"
+    "options": {
+        "file": "genex.ttl",
+        "format": "turtle"
+    }
 }

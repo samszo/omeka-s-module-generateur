@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Mapping;
 
 use CSVImport\Mapping\AbstractResourceMapping;
@@ -9,7 +9,7 @@ class GenerationMapping extends AbstractResourceMapping
     protected $label = 'Generation data'; // @translate
     protected $resourceType = 'generations';
 
-    protected function processGlobalArgs()
+    protected function processGlobalArgs(): void
     {
         parent::processGlobalArgs();
 
@@ -23,7 +23,7 @@ class GenerationMapping extends AbstractResourceMapping
         }
     }
 
-    protected function processCell($index, array $values)
+    protected function processCell($index, array $values): void
     {
         parent::processCell($index, $values);
         $this->processCellGeneration($index, $values);
@@ -48,7 +48,7 @@ class GenerationMapping extends AbstractResourceMapping
         }
     }
 
-    protected function processCellGeneration($index, array $values)
+    protected function processCellGeneration($index, array $values): void
     {
         $data = &$this->data;
 

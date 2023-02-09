@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Generateur\Form;
 
 use Omeka\View\Helper\Api;
@@ -10,7 +10,7 @@ class ResourceForm extends \Omeka\Form\ResourceForm
      */
     protected $api;
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -30,7 +30,7 @@ class ResourceForm extends \Omeka\Form\ResourceForm
     /**
      * @param Api $api
      */
-    public function setApi(Api $api)
+    public function setApi(Api $api): void
     {
         $this->api = $api;
     }

@@ -20,6 +20,18 @@
             "o:is_private": false,
             "data_type_name": null,
             "data_type_label": null,
+            "vocabulary_namespace_uri": "http:\/\/xmlns.com\/foaf\/0.1\/",
+            "vocabulary_label": "Friend of a Friend",
+            "local_name": "img",
+            "label": "image"
+        },
+        {
+            "o:alternate_label": null,
+            "o:alternate_comment": null,
+            "o:is_required": false,
+            "o:is_private": false,
+            "data_type_name": null,
+            "data_type_label": null,
             "vocabulary_namespace_uri": "http:\/\/purl.org\/ontology\/bibo\/",
             "vocabulary_label": "Bibliographic Ontology",
             "local_name": "content",
