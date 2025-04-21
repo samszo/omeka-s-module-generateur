@@ -19,6 +19,18 @@ genex:Concept
   owl:sameAs skos:Concept ;
   a owl:Class .
 
+genex:Oeuvre
+  rdfs:label "Oeuvre"@fr ;
+  skos:definition "Une oeuvre générative."@fr ;
+  owl:sameAs skos:Concept ;
+  a owl:Class .
+
+genex:Dictionnaire
+  rdfs:label "Dictionnaire"@fr ;
+  skos:definition "Un dictionnaire qui regroupe des concepts spécifiques pour oeuvre générative."@fr ;
+  owl:sameAs skos:Concept ;
+  a owl:Class .
+
 genex:Term
   rdfs:label "Terme"@fr ;
   skos:definition "Forme d'un concept."@fr ;
@@ -147,3 +159,36 @@ genex:sparqlEndpoint a rdf:Property ;
 genex:hasFlux a rdf:Property ;
     rdfs:label "A comme flux"@fr ;
     rdfs:comment "Utiliser pour définir le flux génératif."@fr .        
+
+genex:hasDico a rdf:Property ;
+    rdfs:label "A comme dictionnaire"@fr ;
+    rdfs:comment "Utiliser pour définir les dictionnaires associés à une oeuvre."@fr .        
+
+genex:accordFemSing a rdf:Property ;
+    rdfs:label "Accord féminin singulier"@fr ;
+    rdfs:comment "Utiliser pour définir les accords."@fr .        
+
+genex:accordMasSing a rdf:Property ;
+    rdfs:label "Accord masculin singulier"@fr ;
+    rdfs:comment "Utiliser pour définir les accords."@fr .        
+
+genex:accordFemPlu a rdf:Property ;
+    rdfs:label "Accord féminin pluriel"@fr ;
+    rdfs:comment "Utiliser pour définir les accords."@fr .        
+
+genex:accordMasPlu a rdf:Property ;
+    rdfs:label "Accord masculin pluriel"@fr ;
+    rdfs:comment "Utiliser pour définir les accords."@fr .        
+
+genex:Accord
+  rdfs:label "Accord"@fr ;
+  skos:definition "Pour définir les accords en genre et nombre."@fr ;
+  a owl:Class .
+
+genex:hasAccord a rdf:Property ;
+    rdfs:label "A comme Accord"@fr ;
+    rdfs:comment "Utiliser pour définir les accords."@fr .        
+
+genex:hasTraduction a rdf:Property ;
+    rdfs:label "A comme traduction"@fr ;
+    rdfs:comment "Utiliser pour définir les traductions d'un concept dans différentes langues."@fr .        

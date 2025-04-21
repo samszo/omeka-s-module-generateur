@@ -12,6 +12,12 @@
   dc:creator "Alistair Miles", "Sean Bechhofer" ;
   rdfs:seeAlso <http://www.w3.org/TR/skos-reference/> .
 
+
+skos:prefLabel a rdf:Property ;
+    rdfs:label "preferred label"@en ;
+   rdfs:isDefinedBy <http://www.w3.org/2004/02/skos/core> ;
+   skos:definition "The preferred lexical label for a resource, in a given language."@en .
+
 skos:Concept
   rdfs:label "Concept"@en ;
   rdfs:isDefinedBy <http://www.w3.org/2004/02/skos/core> ;
@@ -69,12 +75,6 @@ skos:topConceptOf
   owl:inverseOf skos:hasTopConcept ;
   rdfs:domain skos:Concept ;
   rdfs:range skos:ConceptScheme .
-
-skos:prefLabel
-  rdfs:label "preferred label"@en ;
-  rdfs:isDefinedBy <http://www.w3.org/2004/02/skos/core> ;
-  a owl:AnnotationProperty, rdf:Property ;
-  skos:definition "The preferred lexical label for a resource, in a given language."@en .
 
 skos:altLabel
   rdfs:label "alternative label"@en ;

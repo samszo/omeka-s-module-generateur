@@ -1,0 +1,186 @@
+id_dico,genex:hasDico ^^resource,type,num,lib,lib_eli
+14,28,complément,1,me,m'
+14,28,complément,2,te,t'
+14,28,complément,3,se,s'
+14,28,complément,4,nous,nous 
+14,28,complément,5,vous,vous 
+14,28,complément,6,les,les 
+14,28,complément,7,leur,leur 
+14,28,complément,8,lui,lui 
+14,28,complément,9,[=1|a_le],l'
+14,28,complément,10,[=2|a_le],l'
+14,28,complément,11,[=3|a_le],l'
+14,28,complément,12,[=x|a_le],l'
+14,28,complément,13,,
+14,28,complément,14,,
+14,28,complément,15,vous en,vous en 
+14,28,complément,16,l'on,l'on
+14,28,complément,18,s'il y,s'il y 
+14,28,complément,19,d'en,d'en
+14,28,complément,20,en,en
+14,28,complément,21,m'en,m'en
+14,28,complément,22,t'en,t'en
+14,28,complément,23,s'en,s'en
+14,28,complément,24,y ,y 
+14,28,complément,25,m'y,m'y
+14,28,complément,26,t'y,t'y
+14,28,complément,27,s'y,s'y 
+14,28,complément,28,de m'en,de m'en
+14,28,complément,29,de t'en,de t'en
+14,28,complément,30,de s'en,de s'en
+14,28,complément,31,moi,moi
+14,28,complément,32,toi,toi
+14,28,complément,33,soi,soi
+14,28,complément,34,leur en,leur en
+14,28,complément,35,d'en,d'en
+14,28,complément,36,d'y,d'y
+14,28,complément,37,y en,y en 
+14,28,complément,38,lui en,lui en
+14,28,complément,39,à,à 
+14,28,complément,40,de,d'
+14,28,complément,41,pour,pour 
+14,28,complément,42,que,qu'
+38,31,complément,46,se les,se les 
+38,31,complément,45,se la,se l'
+38,31,complément,44,se le,se l'
+38,31,complément,43,par,par 
+38,31,complément,42,que,qu'
+38,31,complément,41,pour,pour 
+38,31,complément,40,de,d'
+38,31,complément,39,à,à 
+38,31,complément,38,lui en,lui en
+38,31,complément,37,y en,y en 
+38,31,complément,36,d'y,d'y 
+38,31,complément,35,d'en,d'en 
+38,31,complément,34,leur en,leur en 
+38,31,complément,33,soi,soi 
+38,31,complément,32,toi,toi 
+38,31,complément,31,moi,moi 
+38,31,complément,30,de s'en,de s'en 
+38,31,complément,29,de t'en,de t'en 
+38,31,complément,28,de m'en,de m'en 
+38,31,complément,27,s'y,s'y 
+38,31,complément,26,t'y,t'y 
+38,31,complément,25,m'y,m'y 
+38,31,complément,24,y,y 
+38,31,complément,23,s'en,s'en 
+38,31,complément,22,t'en,t'en 
+38,31,complément,21,m'en,m'en 
+38,31,complément,20,en,en 
+38,31,complément,19,d'en,d'en 
+38,31,complément,18,s'il y,s'il y 
+38,31,complément,17,,
+38,31,complément,16,l'on,l'on 
+38,31,complément,15,vous en,vous en 
+38,31,complément,14,,
+38,31,complément,13,,
+38,31,complément,12,l'on se,l'on s'
+38,31,complément,11,[=x|a_luil],[=x|a_luil] 
+38,31,complément,10,[=x|a_le],l'
+38,31,complément,9,[=1|a_le],l'
+38,31,complément,8,lui,lui 
+38,31,complément,7,leur,leur 
+38,31,complément,6,les,les 
+38,31,complément,5,vous,vous 
+38,31,complément,4,nous,nous 
+38,31,complément,3,se,s'
+38,31,complément,2,te,t'
+38,31,complément,1,me,m'
+38,31,complément,0,,
+14,28,sujet,1,je,j'
+14,28,sujet,2,tu,tu 
+14,28,sujet,3,il,il 
+14,28,sujet,4,nous,nous 
+14,28,sujet,5,vous,vous 
+14,28,sujet,6,ils,ils
+14,28,sujet,8,[=1|a_zéro],[=1|a_zéro]
+14,28,sujet indéfini,1,ce,c'
+14,28,sujet indéfini,2,ça,ça 
+14,28,sujet indéfini,3,on,on 
+14,28,sujet indéfini,4,il,il 
+14,28,sujet indéfini,5,cela,cela 
+14,28,sujet,9,[=1|a_zéro],[=1|a_zéro]
+14,28,sujet,7,[=1|a_il],[=1|a_il] 
+70,41,complément,0,,
+70,41,complément,1,me,m'
+70,41,complément,2,te,t'
+70,41,complément,3,se,s'
+70,41,complément,4,nous,nous 
+70,41,complément,5,vous,vous 
+70,41,complément,6,les,les 
+70,41,complément,7,leur,leur 
+70,41,complément,8,lui,lui 
+70,41,complément,9,[=1|a_le],l'
+70,41,complément,10,[=x|a_le],l'
+70,41,complément,11,[=x|a_luil],[=x|a_luil] 
+70,41,complément,12,l'on se,l'on s'
+70,41,complément,13,,
+70,41,complément,14,,
+70,41,complément,15,vous en,vous en 
+70,41,complément,16,l'on,l'on 
+70,41,complément,17,,
+70,41,complément,18,s'il y,s'il y 
+70,41,complément,19,d'en,d'en 
+70,41,complément,20,en,en 
+70,41,complément,21,m'en,m'en 
+70,41,complément,22,t'en,t'en 
+70,41,complément,23,s'en,s'en 
+70,41,complément,24,y,y 
+70,41,complément,25,m'y,m'y 
+70,41,complément,26,t'y,t'y 
+70,41,complément,27,s'y,s'y 
+70,41,complément,28,de m'en,de m'en 
+70,41,complément,29,de t'en,de t'en 
+70,41,complément,30,de s'en,de s'en 
+70,41,complément,31,moi,moi 
+70,41,complément,32,toi,toi 
+70,41,complément,33,soi,soi 
+70,41,complément,34,leur en,leur en 
+70,41,complément,35,d'en,d'en 
+70,41,complément,36,d'y,d'y 
+70,41,complément,37,y en,y en 
+70,41,complément,38,lui en,lui en
+70,41,complément,39,à,à 
+70,41,complément,40,de,d'
+70,41,complément,41,pour,pour 
+70,41,complément,42,que,qu'
+70,41,complément,43,par,par 
+70,41,complément,44,se le,se l'
+70,41,complément,45,se la,se l'
+70,41,complément,46,se les,se les 
+14,28,sujet indéfini,6,qsd,qsd
+38,31,sujet,1,11000000,
+38,31,sujet,2,12000000,
+38,31,sujet,3,13000000,
+38,31,sujet,4,14000000,
+38,31,sujet,5,15000000,
+38,31,sujet,1,I,
+38,31,sujet,2,you,
+38,31,sujet,3,he,
+38,31,sujet,4,she,
+38,31,sujet,5,it,
+38,31,sujet,6,we,
+38,31,sujet,7,you,
+38,31,sujet,8,they,
+14,28,complément,43,par ,par 
+14,28,complément,49,à se,à s'
+14,28,complément,46,se la ,se l'
+14,28,complément,45,se le ,se l'
+14,28,complément,47,se la ,se l'
+14,28,complément,48,se les ,se les 
+14,28,complément,50,l'en,l'en
+14,28,complément,51,vous le,vous l'
+14,28,complément,52,l'on se ,l'on s'
+14,28,complément,53,l'on,l'on
+14,28,complément,54,en se,en s'
+14,28,complément,55,nous en ,nous en 
+14,28,complément,56,de lui,
+14,28,complément,57,de lui,de lui
+14,28,complément,58,de lui en,de lui en
+14,28,complément,59,s'il y en,s'il y en
+14,28,complément,60,s'il,s'il
+14,28,complément,61,le lui,le lui
+14,28,complément,62,nous en,nous en
+14,28,complément,63,s'il en,
+14,28,complément,64,en y ,en y
+14,28,complément,65,en se,en s'

@@ -1,0 +1,19 @@
+﻿o:id,o:resource_template,o:resource_class,o:owner,o:is_public,dcterms:title,dcterms:type,dcterms:identifier,dcterms:language,dcterms:created,dcterms:license
+26,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,bidule,,66,,"2022-12-26 10:51:24",CC0
+25,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,K-gen,,56,,"2016-11-09 09:55:44",
+24,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,JoeBousquet,,54,,"2016-07-02 18:19:32",
+23,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,"Un Monde Incertain",,52,,"2015-04-08 18:18:23",
+22,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,"Un roman inachevé",,51,,"2015-03-11 18:07:54",
+21,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Faust,,50,,"2015-02-28 16:52:26",
+20,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,"Barbe Bleue",,49,,"2015-02-20 16:49:45",
+19,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,HerbierFrançais,,47,,"2015-02-10 14:34:36",
+18,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Lozère,,44,,"2014-12-22 18:02:37",
+17,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,"L'Esprit Humain",,43,,"2014-11-10 23:02:16",
+16,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,"Monstrueux Monstres",,42,,"2014-10-10 06:59:31",
+15,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Carolingiens,,41,,"2014-02-05 15:19:41",
+14,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Poétiques,,37,,"2013-10-15 11:25:30",by
+13,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Corneille-2013,,31,,"2013-09-21 18:07:05",
+12,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Herbier,,33,,"2013-10-03 10:54:34",
+11,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,monostiches,,26,,"2013-08-06 14:11:30",by_nd
+10,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,Tests-Ressources,,32,,"2013-09-24 14:57:13",
+9,genex_oeuvre,genex:Oeuvre,samuel.szoniecky@univ-paris8.fr,true,capture,,2,,"0000-00-00 00:00:00",

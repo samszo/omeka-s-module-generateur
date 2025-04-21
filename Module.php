@@ -1,4 +1,5 @@
-<?php
+<?php 
+declare(strict_types=1);
 
 /*
  * Copyright Daniel Berthereau, 2017-2020
@@ -29,63 +30,64 @@
 
 namespace Generateur;
 
-if (!class_exists(\Generic\AbstractModule::class)) {
-    require file_exists(dirname(__DIR__) . '/Generic/AbstractModule.php')
-        ? dirname(__DIR__) . '/Generic/AbstractModule.php'
-        : __DIR__ . '/src/Generic/AbstractModule.php';
+if (!class_exists(\Common\TraitModule::class)) {
+    require_once dirname(__DIR__) . '/Common/TraitModule.php';
 }
 
+use Common\TraitModule;
 use Generateur\Entity\Generation;
-use Generateur\Permissions\Acl;
-use Generic\AbstractModule;
 use Omeka\Api\Representation\AbstractEntityRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Api\Representation\ItemRepresentation;
-use Omeka\Api\Representation\UserRepresentation;
 use Laminas\EventManager\Event;
 use Laminas\EventManager\SharedEventManagerInterface;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Permissions\Acl\Acl as LaminasAcl;
+use Laminas\ModuleManager\ModuleManager;
+use Omeka\Module\AbstractModule;
 
 class Module extends AbstractModule
 {
+    use TraitModule;
     const NAMESPACE = __NAMESPACE__;
 
-    public function onBootstrap(MvcEvent $event)
+    protected $dependencies = [
+        'Common',
+        'CustomVocab',
+        'NumericDataTypes',
+        'BulkImport',
+        'AdvancedResourceTemplate'
+    ];
+
+    public function onBootstrap(MvcEvent $event): void
     {
         parent::onBootstrap($event);
-        // TODO Add filters (don't display when resource is private, like media?).
-        // TODO Set Acl public rights to false when the visibility filter will be ready.
-        // $this->addEntityManagerFilters();
         $this->addAclRoleAndRules();
     }
 
-    protected function preInstall():void
+    protected function preInstall(): void
     {
         $services = $this->getServiceLocator();
-        $module = $services->get('Omeka\ModuleManager')->getModule('Generic');
-        if ($module && version_compare($module->getIni('version'), '3.0.18', '<')) {
-            $translator = $services->get('MvcTranslator');
+        $translate = $services->get('ControllerPluginManager')->get('translate');
+        $translator = $services->get('MvcTranslator');
+
+        if (!method_exists($this, 'checkModuleActiveVersion') || !$this->checkModuleActiveVersion('Common', '3.4.66')) {
             $message = new \Omeka\Stdlib\Message(
-                $translator->translate('This module requires the module "%s", version %s or above.'), // @translate
-                'Generic', '3.0.18'
+                $translate('The module %1$s should be upgraded to version %2$s or later.'), // @translate
+                'Common', '3.4.66'
             );
-            throw new \Omeka\Module\Exception\ModuleCannotInstallException($message);
+            throw new \Omeka\Module\Exception\ModuleCannotInstallException((string) $message);
         }
+
+        $this->getManageModuleAndResources();
     }
 
     protected function postUninstall():void
     {
         $services = $this->getServiceLocator();
-
-        if (!class_exists(\Generic\InstallResources::class)) {
-            require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
-                ? dirname(__DIR__) . '/Generic/InstallResources.php'
-                : __DIR__ . '/src/Generic/InstallResources.php';
+        if (!class_exists(\Common\TraitModule::class)) {
+            require_once dirname(__DIR__) . '/Common/TraitModule.php';
         }
-
-        $installResources = new \Generic\InstallResources($services);
-        $installResources = $installResources();
 
         if (!empty($_POST['remove-template'])) {
             $resourceTemplate = 'Génération';
@@ -370,13 +372,13 @@ class Module extends AbstractModule
         }
 
         // TODO Add the special data to the resource template.
-
+        /*
         $sharedEventManager->attach(
             '*',
             'view.layout',
             [$this, 'addHeadersAdmin']
         );
-
+        */
         // Manage the search query with special fields that are not present in
         // default search form.
         $sharedEventManager->attach(
@@ -438,12 +440,13 @@ class Module extends AbstractModule
             [$this, 'warnUninstall']
         );
 
-        // Module Csv Import.
+        /* Module Csv Import.
         $sharedEventManager->attach(
             \CSVImport\Form\MappingForm::class,
             'form.add_elements',
             [$this, 'addCsvImportFormElements']
         );
+        */
     }
 
     /**
@@ -574,6 +577,7 @@ class Module extends AbstractModule
         $event->setParam('filters', $filters);
     }
 
+    
     public function addCsvImportFormElements(Event $event)
     {
         /** @var \CSVImport\Form\MappingForm $form */
@@ -597,6 +601,7 @@ class Module extends AbstractModule
         $form->addProcessElements();
         $form->addAdvancedElements();
     }
+    
 
     /**
      * Add the headers for admin management.

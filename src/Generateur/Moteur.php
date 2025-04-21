@@ -187,8 +187,8 @@ class Moteur {
         $this->cacheResourceTemplate();
         $this->cacheProperties();
         //TODO:trouver un autre moyen de gérer le cache
-        $this->bCache = $bCache;
-        $this->initCache();
+        $this->bCache = false;//$bCache;
+        //$this->initCache();
         $this->log = $log;
         //TODO récupérer les services par l'item->getServiceLocator()->get('Config') par exemple tempDir
         $this->cnx = $cnx;
@@ -871,6 +871,8 @@ class Moteur {
         $this->arrFlux[$this->ordre]["rc"] = $rc;
 
         //generates according to class
+        xdebug_break();
+
         switch ($rc) {
             case "genex:GenSparql":
                 $this->genSparql($oItem, $niveau);
@@ -2191,7 +2193,8 @@ class Moteur {
                 $id = $items[0];    
             }
 
-            $this->cache->setItem($c, $id);
+            if($this->bCache)
+                $this->cache->setItem($c, $id);
         }
         $oItem = $this->api->read('items', $id)->getContent();
 
@@ -2208,11 +2211,16 @@ class Moteur {
 
         $genCompo = array();
 
+       
         //on récupère le déterminant
         $arrGen = explode("|",$gen);
         
         if(count($arrGen)==1){
-            $genCompo['class']=$arrGen[0];
+		    if(strpos($gen,"#")){
+                $genCompo['det'] = str_replace("#","",$gen); 
+            }else{
+                $genCompo['class']=$arrGen[0];
+            }
             return $genCompo;
         }
 
@@ -2273,7 +2281,7 @@ class Moteur {
             }
         }
 
-        //récupère les générateur du texte
+        //récupère les générateurs du texte
         $arrGen = $this->getGenInTxt($exp);
 
         //construction du flux
@@ -2335,6 +2343,18 @@ class Moteur {
                 'serializer'
             ],
         ]); 
+
+        /*TOTDO use doctrine cache
+        https://www.doctrine-project.org/projects/doctrine-cache/en/1.11/index.html
+        use Doctrine\Common\Cache\MemcacheCache;
+        $memcache = new Memcache();
+        $cache = new MemcacheCache();
+        $cache->setMemcache($memcache);
+
+        $cache->set('key', 'value');
+
+        echo $cache->get('key') // prints "value"
+        */
 
     }
 

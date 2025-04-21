@@ -1,0 +1,138 @@
+genex:hasDico,id_dico,dcterms:identifier,noEliMasSing,noEliFemSing,EliMasSing,EliFemSing,noEliMasPlu,noEliFemPlu,EliMasPlu,EliFemPlu,dcterms:title
+32,39,1,-,-,- ,- ,d'un des ,d'une des ,d'un des ,d'une des ,déterminant 1
+32,39,2,- ,- ,- ,- ,un de ces ,une de ces ,un de ces ,une de ces ,déterminant 2
+32,39,3,- ,- ,- ,- ,un de ses ,une de ses ,un de ses ,une de ses ,déterminant 3
+32,39,4,in the ,in the ,in the ,in the ,in the ,in the ,in the ,in the ,déterminant 4
+32,39,5,every ,every ,every ,every ,every ,every ,every ,every ,déterminant 5
+32,39,6,that ,that ,that ,that ,those ,those ,those ,those ,déterminant 6
+32,39,7,some ,some ,some ,some ,some ,some ,some ,some ,déterminant 7
+32,39,8,each ,each ,each,each ,,,,,déterminant 8
+32,39,9,of a ,of a ,of an ,of an ,of some,of some,of some ,of some ,déterminant 9
+32,39,10,of ,of ,of ,of ,of ,of ,of ,of ,déterminant 10
+32,39,11,of the ,of the ,of the ,of the ,of the ,of the ,of the ,of the ,déterminant 11
+32,39,12,the ,the ,the ,the ,the ,the ,the ,the ,déterminant 12
+32,39,13,le plus ,la plus ,le plus ,la plus ,les plus ,les plus ,les plus ,les plus ,déterminant 13
+32,39,14,their ,their ,their ,their ,their ,their ,their ,their ,déterminant 14
+32,39,15,my ,my ,my ,my ,my ,my ,my ,my ,déterminant 15
+32,39,16,our ,our ,our ,our ,our,our ,our ,our ,déterminant 16
+32,39,17,nul ,nulle ,nul ,nulle ,nuls ,nulles ,nuls ,nulles ,déterminant 17
+32,39,18,quel ,quelle ,quel ,quelle ,quels ,quelles ,quels ,quelles ,déterminant 18
+32,39,19,some ,some ,some ,some ,some ,some ,some ,some ,déterminant 19
+32,39,20,its ,its ,its ,its ,its ,its ,its ,its ,déterminant 20
+32,39,21,tel ,telle ,tel ,telle ,tels ,telles ,tels ,telles ,déterminant 21
+32,39,22,ton ,ta ,ton ,ton ,tes ,tes ,tes ,tes ,déterminant 22
+32,39,24,tout ce ,toute cette ,tout cet ,toute cette ,tous ces ,toutes ces ,tous ces ,toutes ces ,déterminant 24
+32,39,25,every ,every ,every ,every ,every ,every ,every ,every ,déterminant 25
+32,39,26,all ,all ,all ,all ,all ,all ,all ,all ,déterminant 26
+32,39,27,all the ,all the ,all the ,all the ,all the ,all the ,all the ,all the ,déterminant 27
+32,39,28,tout notre ,toute notre ,tout notre ,toute notre ,tous nos ,toutes nos ,tous nos ,toutes nos ,déterminant 28
+32,39,29,his ,her ,his ,her ,their ,their ,their ,their ,déterminant 29
+32,39,30,tout ton ,toute ta ,tout ton ,toute ta ,tous tes ,toutes tes ,tous tes ,toutes tes ,déterminant 30
+32,39,31,tout votre ,toute votre ,tout votre ,toute votre ,tous vos ,toutes vos ,tous vos ,toutes vos ,déterminant 31
+32,39,32,a ,a ,an ,an ,some ,some ,some ,some ,déterminant 32
+32,39,33,un du ,une de la ,un de l',une de l',un des ,une des ,un des ,une des ,déterminant 33
+32,39,34,your ,your ,your ,your ,your ,your ,your,your ,déterminant 34
+32,39,35,d'autre ,d'autre ,d'autre ,d'autre ,d'autres ,d'autres ,d'autres ,d'autres ,déterminant 35
+32,39,36,le mien ,la mienne ,le mien ,la mienne ,les miens ,les miennes ,les miens ,les miennes ,déterminant 36
+32,39,37,que ,que ,qu',qu',que ,que ,qu',qu',déterminant 37
+32,39,38,- ,- ,- ,- ,un de vos ,une de vos ,un de vos ,une de vos ,déterminant 38
+32,39,39,- ,- ,- ,- ,un de tes ,une de tes ,un de tes ,une de tes ,déterminant 39
+32,39,40,- ,- ,- ,- ,un de mes ,une de mes ,un de mes ,une de mes ,déterminant 40
+32,39,41,qu'un ,qu'une ,qu'un ,qu'une ,que des ,que des ,que des ,que des ,déterminant 41
+32,39,42,tout celui ,toute celle ,tout celui ,toute celle ,tous ceux ,toutes celles ,tous ceux ,toutes celles ,déterminant 42
+32,39,43,- ,- ,- ,- ,un de ses ,une de ses ,un de ses ,une de ses ,déterminant 43
+32,39,44,tout un ,toute une ,tout un ,toute une ,tous les ,toutes les ,tous les ,toutes les ,déterminant 44
+32,39,45,this ,this ,this ,this ,these ,these ,these ,these ,déterminant 45
+37,46,1,,,,,d'un des ,d'une des ,d'un des ,d'une des ,déterminant 1
+37,46,2,- ,- ,- ,- ,un de ces ,une de ces ,un de ces ,une de ces ,déterminant 2
+37,46,3,- ,- ,- ,- ,un de ses ,une de ses ,un de ses ,une de ses ,déterminant 3
+37,46,4,au ,à la ,à l',à l',aux ,aux ,aux ,aux ,déterminant 4
+37,46,5,aucun ,aucune ,aucun ,aucune ,aucuns ,aucunes ,aucuns ,aucunes ,déterminant 5
+37,46,6,ce ,cette ,cet ,cette ,ces ,ces ,ces ,ces ,déterminant 6
+37,46,7,certain ,certaine ,certain ,certaine ,certains ,certaines ,certains ,certaines ,déterminant 7
+37,46,8,chaque ,chaque ,chaque ,chaque ,,,,,déterminant 8
+37,46,9,d'un ,d'une ,d'un ,d'une ,de ,de ,d',d',déterminant 9
+37,46,10,de ,de ,d',d',de ,de ,d',d',déterminant 10
+37,46,11,du ,de la ,de l',de l',des ,des ,des ,des ,déterminant 11
+37,46,12,le ,la ,l',l',les ,les ,les ,les ,déterminant 12
+37,46,13,le plus ,la plus ,le plus ,la plus ,les plus ,les plus ,les plus ,les plus ,déterminant 13
+37,46,14,leur ,leur ,leur ,leur ,leurs ,leurs ,leurs ,leurs ,déterminant 14
+37,46,15,mon ,ma ,mon ,mon ,mes ,mes ,mes ,mes ,déterminant 15
+37,46,16,notre ,notre ,notre ,notre ,nos ,nos ,nos ,nos ,déterminant 16
+37,46,17,nul ,nulle ,nul ,nulle ,nuls ,nulles ,nuls ,nulles ,déterminant 17
+37,46,18,quel ,quelle ,quel ,quelle ,quels ,quelles ,quels ,quelles ,déterminant 18
+37,46,19,quelque ,quelque ,quelque ,quelque ,quelques ,quelques ,quelques ,quelques ,déterminant 19
+37,46,20,son ,sa ,son ,son ,ses ,ses ,ses ,ses ,déterminant 20
+37,46,21,tel ,telle ,tel ,telle ,tels ,telles ,tels ,telles ,déterminant 21
+37,46,22,ton ,ta ,ton ,ton ,tes ,tes ,tes ,tes ,déterminant 22
+37,46,23,tout ,toute ,tout ,toute ,tous ,toutes ,tous ,toutes ,déterminant 23
+37,46,24,tout ce ,toute cette ,tout cet ,toute cette ,tous ces ,toutes ces ,tous ces ,toutes ces ,déterminant 24
+37,46,25,tout le ,toute la ,tout l',toute l',tous les ,toutes les ,tous les ,toutes les ,déterminant 25
+37,46,26,tout leur ,toute leur ,tout leur ,toute leur ,tous leurs ,toutes leurs ,tous leurs ,toutes leurs ,déterminant 26
+37,46,27,tout mon ,toute ma ,tout mon ,toute mon ,tous mes ,toutes mes ,tous mes ,toutes mes ,déterminant 27
+37,46,28,tout notre ,toute notre ,tout notre ,toute notre ,tous nos ,toutes nos ,tous nos ,toutes nos ,déterminant 28
+37,46,29,tout son ,toute sa ,tout son ,toute son ,tous ses ,toutes ses ,tous ses ,toutes ses ,déterminant 29
+37,46,30,tout ton ,toute ta ,tout ton ,toute ta ,tous tes ,toutes tes ,tous tes ,toutes tes ,déterminant 30
+37,46,31,tout votre ,toute votre ,tout votre ,toute votre ,tous vos ,toutes vos ,tous vos ,toutes vos ,déterminant 31
+37,46,32,un ,une ,un ,une ,des ,des ,des ,des ,déterminant 32
+37,46,33,un du ,une de la ,un de l',une de l',un des ,une des ,un des ,une des ,déterminant 33
+37,46,34,votre ,votre ,votre ,votre ,vos ,vos ,vos ,vos ,déterminant 34
+37,46,35,d'autre ,d'autre ,d'autre ,d'autre ,d'autres ,d'autres ,d'autres ,d'autres ,déterminant 35
+37,46,36,le mien ,la mienne ,le mien ,la mienne ,les miens ,les miennes ,les miens ,les miennes ,déterminant 36
+37,46,37,que ,que ,qu',qu',que ,que ,qu',qu',déterminant 37
+37,46,38,- ,- ,- ,- ,un de vos ,une de vos ,un de vos ,une de vos ,déterminant 38
+37,46,39,- ,- ,- ,- ,un de tes ,une de tes ,un de tes ,une de tes ,déterminant 39
+37,46,40,- ,- ,- ,- ,un de mes ,une de mes ,un de mes ,une de mes ,déterminant 40
+37,46,41,qu'un ,qu'une ,qu'un ,qu'une ,que des ,que des ,que des ,que des ,déterminant 41
+37,46,42,tout celui ,toute celle ,tout celui ,toute celle ,tous ceux ,toutes celles ,tous ceux ,toutes celles ,déterminant 42
+37,46,43,- ,- ,- ,- ,un de ses ,une de ses ,un de ses ,une de ses ,déterminant 43
+37,46,44,tout un ,toute une ,tout un ,toute une ,tous les ,toutes les ,tous les ,toutes les ,déterminant 44
+40,69,1,-,-,- ,- ,d'un des ,d'une des ,d'un des ,d'une des ,déterminant 1
+40,69,2,- ,- ,- ,- ,un de ces ,une de ces ,un de ces ,une de ces ,déterminant 2
+40,69,3,- ,- ,- ,- ,un de ses ,une de ses ,un de ses ,une de ses ,déterminant 3
+40,69,4,in the ,in the ,in the ,in the ,in the ,in the ,in the ,in the ,déterminant 4
+40,69,5,tanto ,tanta ,tanto ,tanta ,tantos ,tantas ,tanto ,tantas ,déterminant 5
+40,69,6,este ,esta ,este ,esta ,estos ,estas ,estos ,estas ,déterminant 6
+40,69,7,cuyo ,cuya ,cuyo ,cuya ,cuyos ,cuyas ,cuyos ,cuyas ,déterminant 7
+40,69,8,del ,de la ,del ,de la ,de los ,de las ,de los ,de las ,déterminant 8
+40,69,9,of a ,of a ,of an ,of an ,of some,of some,of some ,of some ,déterminant 9
+40,69,10,de ,de ,de ,de ,de ,de ,de ,de ,déterminant 10
+40,69,11,a ,a ,a ,a ,a ,a ,a ,a ,déterminant 11
+40,69,12,el ,la ,el ,la ,los ,las ,los ,las ,déterminant 12
+40,69,13,al ,a la ,al ,a la ,a los ,a las ,a los ,a las ,déterminant 13
+40,69,14,y ,e ,y ,e ,y ,e ,y ,e ,déterminant 14
+40,69,15,my ,my ,my ,my ,my ,my ,my ,my ,déterminant 15
+40,69,16,our ,our ,our ,our ,our,our ,our ,our ,déterminant 16
+40,69,17,nul ,nulle ,nul ,nulle ,nuls ,nulles ,nuls ,nulles ,déterminant 17
+40,69,18,quel ,quelle ,quel ,quelle ,quels ,quelles ,quels ,quelles ,déterminant 18
+40,69,19,some ,some ,some ,some ,some ,some ,some ,some ,déterminant 19
+40,69,20,su ,su ,su ,su ,sus ,sus ,sus ,sus ,déterminant 20
+40,69,21,alguno ,alguna ,alguno ,alguna ,algunos ,algunas ,algunos ,algunas ,déterminant 21
+40,69,22,ton ,ta ,ton ,ton ,tes ,tes ,tes ,tes ,déterminant 22
+40,69,24,todo ,toda ,todo ,toda ,todos ,todas ,todos ,todas ,déterminant 24
+40,69,25,every ,every ,every ,every ,every ,every ,every ,every ,déterminant 25
+40,69,27,todo el ,toda la ,todo el ,toda la ,todos los ,todas las ,todos los ,todas las ,déterminant 27
+40,69,28,de su ,de su ,de su ,de su ,de sus ,de sus ,de sus ,de sus ,déterminant 28
+40,69,29,all its ,all its ,all its ,all its ,all its ,all its ,all its ,all its ,déterminant 29
+40,69,30,tout ton ,toute ta ,tout ton ,toute ta ,tous tes ,toutes tes ,tous tes ,toutes tes ,déterminant 30
+40,69,31,vuestro ,vuestra ,vuestro ,vuestra ,vuestros ,vuestras ,vuestros ,vuestras ,déterminant 31
+40,69,32,un ,una ,un ,una ,unos ,unas ,unos ,unas ,déterminant 32
+40,69,33,un du ,una de la ,un de l',une de l',un des ,une des ,un des ,une des ,déterminant 33
+40,69,34,your ,your ,your ,your ,your ,your ,your,your ,déterminant 34
+40,69,35,d'autre ,d'autre ,d'autre ,d'autre ,d'autres ,d'autres ,d'autres ,d'autres ,déterminant 35
+40,69,36,le mien ,la mienne ,le mien ,la mienne ,les miens ,les miennes ,les miens ,les miennes ,déterminant 36
+40,69,37,que ,que ,qu',qu',que ,que ,qu',qu',déterminant 37
+40,69,38,- ,- ,- ,- ,un de vos ,une de vos ,un de vos ,une de vos ,déterminant 38
+40,69,39,- ,- ,- ,- ,un de tes ,une de tes ,un de tes ,une de tes ,déterminant 39
+40,69,40,- ,- ,- ,- ,un de mes ,une de mes ,un de mes ,une de mes ,déterminant 40
+40,69,41,qu'un ,qu'une ,qu'un ,qu'une ,que des ,que des ,que des ,que des ,déterminant 41
+40,69,42,tout celui ,toute celle ,tout celui ,toute celle ,tous ceux ,toutes celles ,tous ceux ,toutes celles ,déterminant 42
+40,69,43,- ,- ,- ,- ,un de ses ,une de ses ,un de ses ,une de ses ,déterminant 43
+40,69,44,tout un ,toute une ,tout un ,toute une ,tous les ,toutes les ,tous les ,toutes les ,déterminant 44
+40,69,45,this ,this ,this ,this ,these ,these ,these ,these ,déterminant 45
+37,46,45,- ,- ,- ,- ,un des ,une des ,un des ,une des ,déterminant 45
+37,46,46,,,,,un de nos,une de nos,un de nos,une de nos,déterminant 46
+37,46,47,le sien,la sienne,le sien,la sienne,les siens,les siennes,les siens,les siennes,déterminant 47
+37,46,48,,,,,d'un de ses,d'une de ses,d'un de ses,d'une de ses,déterminant 48
+37,46,49,un tel,une telle,un tel,une telle,de tels,de telles,de tels,de telles,déterminant 49
+37,46,50,un de ce,une de ce,un de ce,une de ce,un de ces,une de ces,un de ces,une de ces,déterminant 50

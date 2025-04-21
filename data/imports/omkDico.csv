@@ -1,0 +1,47 @@
+﻿o:id,o:resource_template,o:resource_class,o:owner,o:is_public,dcterms:title,dcterms:type,dcterms:identifier,dcterms:language,dcterms:created,dcterms:license
+72,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,bidule,concepts,163,français,,CC0
+71,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_K-gen,concepts,155,français,,by
+70,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,JBousquet,concepts,150,français,,by
+69,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,samszo,concepts,149,français,,by
+68,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_MondIcertain,concepts,148,français,,by
+67,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_RomanInachevé,concepts,147,français,,by
+66,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_Faust,concepts,146,français,,by
+65,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS-BarbeBleue,concepts,145,français,,by
+64,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_HerbierFrançais,concepts,144,français,,by
+63,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,Lozère,concepts,142,français,,by
+62,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_EspritHumain,concepts,141,français,,by
+61,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS-Animaux,concepts,140,français,,by
+60,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_carolingiens,concepts,137,français,,by
+59,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_ORACLE,concepts,135,français,,by
+58,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,concert,concepts,134,français,,by
+57,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_bavard,concepts,132,français,,by
+56,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS-Trajectoires,concepts,130,français,,by
+55,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS-Poétiques,concepts,129,français,,by
+54,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS-Herbier,concepts,124,anglais,,by
+53,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_Tests-Ressources,concepts,123,français,,by
+52,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS-Corneille,concepts,122,français,,by
+51,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_Climats,concepts,118,français,,by
+50,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,DS_Monostiches,concepts,112,français,,by
+49,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"Proverbes web",concepts,102,français,,by
+48,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,vies,concepts,101,français,,by
+47,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,théâtre,concepts,99,français,,by
+46,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"capture twitter",concepts,96,français,,by
+45,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"capture chansons",concepts,94,français,,by
+44,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"capture bios",concepts,93,français,,by
+43,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"capture critiques",concepts,82,français,,by
+42,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen espagnol général",concepts,73,espagnol,,by
+41,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen espagnol pronom",pronoms,70,espagnol,,by
+40,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen espagnol déterminant",déterminants,69,espagnol,,by
+39,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen espagnol syntagme",syntagmes,68,espagnol,,by
+38,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen espagnol conjugaisons",conjugaisons,67,espagnol,,by
+37,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen français déterminants",déterminants,46,français,,by
+36,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen français conjugaison",conjugaisons,44,français,,by
+35,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen anglais général",concepts,42,anglais,,by
+34,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen anglais syntagme",syntagmes,41,anglais,,by
+33,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen anglais conjugaisons",conjugaisons,40,anglais,,by
+32,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen anglais déterminants",déterminants,39,anglais,,by
+31,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen anglais pronom",pronoms,38,anglais,,by
+30,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen français général",concepts,34,français,,by
+29,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen français négation",négations,16,français,,by
+28,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen français pronom",pronoms,14,français,,by
+27,genex_dictionnaire,genex:Dictionnaire,samuel.szoniecky@univ-paris8.fr,true,"gen français syntagmes",syntagmes,4,français,,by
