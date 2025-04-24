@@ -134,6 +134,8 @@ class GenerateuroldWriter extends AbstractGenerateuroldWriter
 
     protected function writeFields(array $fields): self
     {
+        //ATTENTION faut avoir la mémoire à 10G pour le traitement
+        ini_set('memory_limit', '10G');
 
         fwrite($this->handle, json_encode($fields, $this->options['flags']) . ",\n");
 

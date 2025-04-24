@@ -2255,6 +2255,43 @@ class Moteur {
 
     }
 
+/**
+	 * récupère la décomposition du générateur
+     * @param string $gen
+     * 
+     * @return array
+	 */
+    function explodeCode($gen){
+
+        $genCompo = array();
+       
+        //on récupère le déterminant
+        $arrGen = explode("|",$gen);
+        
+        if(count($arrGen)==1){
+		    if(strpos($gen,"#")){
+                $genCompo['det'] = str_replace("#","",$gen); 
+            }else{
+                $genCompo['class']=$arrGen[0];
+            }
+            return $genCompo;
+        }else{
+            $genCompo['det']=$arrGen[0];
+            $genCompo['class']=$arrGen[1];                
+        }
+        $genCompo['det']=$genCompo['det']=="0" ? "" : $genCompo['det'];
+		//vérifie si la class est un déterminant
+		//if(is_numeric($genCompo['class']))$genCompo['classDet']=$genCompo['class'];
+
+		//décompose la classe
+		$arrClass=explode("@", $genCompo['class']);
+        $genCompo['cpt1']=$arrClass[0];        
+        $genCompo['cpt2']=$arrClass[1];        
+
+        return $genCompo;
+
+    }
+
 
     /**
 	 * contruction du flux de génération

@@ -134,8 +134,14 @@ abstract class AbstractGenerateuroldWriter extends AbstractWriter
     {
         $vhm = $this->getServiceLocator()->get('ViewHelperManager');
         $this->querySQL = $vhm->get('generateurSql');
+        /*pour toute la base
         $this->data = $this->querySQL->__invoke([
             'action'=>'getOldConceptDoublons'
+        ]);
+        */
+        //pour toute les concepts oubliés
+        $this->data = $this->querySQL->__invoke([
+            'action'=>'getOldConceptOubli'
         ]);
 
         $this->rs = [];
@@ -167,7 +173,6 @@ abstract class AbstractGenerateuroldWriter extends AbstractWriter
                 'cpts'=>[$c]
             ]);
             $this->rs[] = $rs[0];
-            ++$this->stats['processed'];  
             $this->logger->info(
                 '{processed}/{total} => {id}.', // @translate
                 ['processed' => $this->stats['processed'], 'total' => $this->stats['totalToProcess'], 'id' => $c['cpt']]
