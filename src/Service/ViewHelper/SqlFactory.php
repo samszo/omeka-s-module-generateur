@@ -10,9 +10,9 @@ class SqlFactory implements FactoryInterface
     public function __invoke(ContainerInterface $services, $requestedName, array $options = null)
     {
         $api = $services->get('Omeka\ApiManager');
-        $conn = $services->get('Omeka\Connection');
+        $cnx = $services->get('Omeka\Connection');
         $logger = $services->get('Omeka\Logger');
 
-        return new GenerateurSql($api, $conn, $logger);
+        return new GenerateurSql($api, $cnx, $logger);
     }
 }

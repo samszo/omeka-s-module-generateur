@@ -35,7 +35,7 @@ return [
             'showGenerateurForm' => Service\ViewHelper\ShowGenerateurFormFactory::class,
             'generations' => Service\ViewHelper\GenerationsFactory::class,
             'MoteurFactory' => Service\ViewHelper\MoteurFactory::class,
-            'generateurSql' => Service\ViewHelper\SqlFactory::class,
+            'GenerateurSql' => Service\ViewHelper\SqlFactory::class,
         ],
     ],
 

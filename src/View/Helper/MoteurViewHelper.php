@@ -6,13 +6,19 @@ use Generateur\Generateur\Moteur;
 
 class MoteurViewHelper extends AbstractHelper
 {
-    public function __construct($api)
-    {
-      $this->api = $api;
-    }
+  protected $api;
+  protected $logger;
+  protected $sql;
 
-    public function __invoke($cache, $log)
+    public function __construct($api, $logger, $sql)
     {
-        return new Moteur($cache, $this->api, $log);
+        $this->logger = $logger;
+        $this->api = $api;
+        $this->sql = $sql;
+    }
+    
+    public function __invoke($cache,$log)
+    {
+        return new Moteur(true, $this->api, $this->logger, $this->sql);
     }
 }

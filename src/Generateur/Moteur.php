@@ -170,6 +170,10 @@ class Moteur {
      * @var cnx
      */
     protected $cnx;
+    /**
+     * @var sql
+     */
+    protected $sql;
 
     /**
      * Construct Moteur
@@ -177,10 +181,10 @@ class Moteur {
      * @param boolean   $bCache active le cache
      * @param object    $api controller pour gérer l'api
      * @param object    $log controller pour gérer les log
-     * @param object    $cnx controller pour gérer les requête sql
+     * @param object    $sql controller pour gérer les requête sql
 
      */
-    public function __construct($bCache=true, $api, $log=false, $cnx=false)
+    public function __construct($bCache=true, $api, $log=false, $sql=false)
     {
         $this->api = $api;
         $this->cacheResourceClasses();
@@ -190,12 +194,278 @@ class Moteur {
         $this->bCache = false;//$bCache;
         //$this->initCache();
         $this->log = $log;
-        //TODO récupérer les services par l'item->getServiceLocator()->get('Config') par exemple tempDir
-        $this->cnx = $cnx;
+        if($sql){
+            $this->sql = $sql;
+            $this->cnx = $sql->getCnx();    
+        }
         $this->props = [];
         $this->rcs = [];
   
     }  
+
+    /**
+     * génère à partir d'un concept
+     *
+     * @param array     $params paramètres de la génération
+     * 
+     * @return array
+     */
+    public function genereConcept($params)
+    {
+        $this->arrFlux = $this->data = $this->sql->__invoke([
+            'idConcept'=>$params["idConcept"],
+            'idTerm'=>$params["idTerm"],
+            'action'=>'getRandomFlux']);
+
+        $this->texte = "";
+		$txtCondi = true;
+		$imbCondi= false;		
+        $ordreDeb = 0;
+        $ordreFin = count($this->arrFlux)-1;
+
+		for ($i = $ordreDeb; $i <= $ordreFin; $i++) {
+			$this->ordre = $i;
+            $this->arrFlux[$i] = $this->setAccordsFlux($this->arrFlux[$i]);
+            $this->texte .= " ".$this->arrFlux[$i]['text'];
+		}
+		
+        //nettoie le texte
+        $this->nettoyer();
+
+        //gestion des majuscules
+        $this->genereMajuscules();
+
+		//mise en forme du texte
+		$this->coupures();
+
+        return $params['structure'] ? ['struture'=>$this->arrFlux,'texte'=>$this->texte] : $this->texte;
+    }
+
+
+    /**
+     * calcul les accords d'un flux
+     *
+     * @param array 	$flux
+     *
+     * return array
+     */
+	function setAccordsFlux($flux){
+
+        //vérifie si on gère un syntagme
+        if($flux["syn_id"]){
+            $syn = $this->arrFlux['accords']['syn'.$flux["syn_id"]];
+            $flux['text'] = $syn['lib'];
+            return $flux;
+        }
+
+        //vérifie si le déterminant est pour un verbe
+        if(strlen($flux["det"]) > 6) return $this->getFluxVerbe($flux);
+
+        //vérifie s'il faut chercher le pluriel
+        $flux['pluriel'] = intval($flux["det"]) >= 50 ? true : false;
+        
+        //récupère les accords du premier flux
+        if($flux['cpt1_flux']){
+            $acc1 = $this->arrFlux['accords'][$flux['cpt1_flux'][0]["term_id"]][0];
+            $cpt1Vals = explode(",",$acc1['vals']);
+            $cpt1Props = explode(",",$acc1['props']);
+            $kEli = array_search(195, $cpt1Props); 
+            $flux['elision']=$cpt1Vals[$kEli];
+            $kPlur = array_search(504, $cpt1Props); 
+            if($kPlur){
+                $flux['genre'] = 'feminin';
+            }else{
+                $kPlur = array_search(505, $cpt1Props); 
+                $flux['genre'] = 'masculin';
+            }
+
+        }
+        //le deuxième flux s'accorde sur le premier
+        
+
+        //si aucun flux de concept le vecteur est maculin singulier sans élision
+        if(!isset($flux["cpt1_flux"])){
+            $flux['elision'] = "0";
+            $flux['genre'] = "masculin";
+        }
+
+        //récupère les valeurs du déterminant suivant les accords
+        $detTxt = "";
+        foreach ($this->arrFlux['accords'][$flux['det_id']] as $det) {
+            $detProps = explode(",",$det['props']);
+            $kEli = array_search(195, $detProps); 
+            $detVals=explode(",",$det['vals']);
+            if($detVals[$kEli] == $flux['elision']){
+                if($flux['genre'] == "feminin" &&  $flux['pluriel'])$propId=504;
+                if($flux['genre'] == "feminin" &&  !$flux['pluriel'])$propId=502;
+                if($flux['genre'] == "masculin" &&  $flux['pluriel'])$propId=505;
+                if($flux['genre'] == "masculin" &&  !$flux['pluriel'])$propId=503;
+                $kProp = array_search($propId, $detProps); 
+                $detTxt = $detVals[$kProp];
+            }
+        }
+        //construction du texte
+        $flux['text'] = " ".$detTxt." ".$acc1['prefix'];
+        if($flux['pluriel'])$flux['text'] .= $cpt1Vals[$kPlur];
+
+
+        /*vérifie s'il faut ajouter gérer les vecteurs et les déterminants des niveaux précédents
+        if($niveau > 0){
+            $ordreNiveauBase = $this->ordre-$niveau+1;
+            if(isset($this->arrFlux[$ordreNiveauBase]["vecteur"])){
+                $this->arrFlux[$ordreNiveauBase]["vecteur"]["elision"] = $elision;                    
+                $this->arrFlux[$this->ordre]["vecteur"]["pluriel"] = isset($this->arrFlux[$ordreNiveauBase]["vecteur"]["pluriel"]) ? $this->arrFlux[$ordreNiveauBase]["vecteur"]["pluriel"] : false;    
+                //si le genre est déjà défini par '=1' on le récupère
+                if(isset($this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"]))$this->arrFlux[$this->ordre]["vecteur"]["genre"]=$this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"];
+                else $this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"]=$genre;
+            }
+            if(isset($this->arrFlux[$ordreNiveauBase]["determinant"])){
+                $this->arrFlux[$this->ordre]["determinant"] = $this->arrFlux[$ordreNiveauBase]["determinant"];    
+            }
+            if(isset($this->arrFlux[$ordreNiveauBase]["determinant_verbe"])){
+                $this->arrFlux[$this->ordre]["determinant_verbe"] = $this->arrFlux[$ordreNiveauBase]["determinant_verbe"];    
+                //récupère le premier vecteur précédent
+                for($i = $this->ordre-1; $i >= 0; $i--){
+                    if(isset($this->arrFlux[$i]["vecteur"])){
+                        //transmet le pluriel et le genre
+                        $this->arrFlux[$this->ordre]["vecteur"] = [
+                            "pluriel"=> isset($this->arrFlux[$i]["vecteur"]["pluriel"]) ? $this->arrFlux[$i]["vecteur"]["pluriel"] : 0,
+                            "genre"=> isset($this->arrFlux[$i]["vecteur"]["genre"]) ? $this->arrFlux[$i]["vecteur"]["genre"] : $this->defautGenre,
+                        ];
+                        $i=-1;
+                    }
+                }
+    
+            }
+        }
+        */
+
+        return $flux;
+
+    }
+
+    /**
+     * génère un verbe
+     *
+     * @param array $flux
+     *
+     */
+	function getFluxVerbe($flux){        
+        /*
+        Position 0 : type de négation
+        Position 1 : temps verbal
+        Position 2 : pronoms sujets définis
+        Positions 3 ET 4 : pronoms compléments
+        Position 5 : ordre des pronoms sujets
+        Position 6 : pronoms indéfinis
+        Position 7 : Place du sujet dans la chaîne grammaticale
+        */
+
+
+		//dans le cas d'un verbe théorique on ne fait rien
+		if($flux["value"]=="v_théorique")return $flux; 
+				
+		//récupère les pronoms
+        $kDet = "detVerbe".$flux["det"][2].$flux["det"][3].$flux["det"][4].$flux["det"][6];
+        $pronomVerbe = $this->arrFlux['accords'][$kDet];
+        
+		//récupère les accords du verbe
+        $accVerbe = $this->arrFlux['accords'][$flux['cpt1_flux'][0]['term_id']][0];
+		
+		
+        //construction du centre
+        if($accVerbe['prefix']){
+            $prefix = $accVerbe['prefix'] == "0" ? "" : $accVerbe['prefix'];  
+            $verbe = $prefix.$accVerbe['tms'];
+        }else
+            $verbe = $accVerbe['tms'];
+		
+			
+        //construction de la forme verbale
+        //gestion de l'infinitif
+        if($flux["det"][1]==9 || $flux["det"][1]==7 || $flux["det"][1]==8){
+            if($pronomVerbe["c"]){
+                if($pronomVerbe["c"]["ident"]!=39 && $pronomVerbe["c"]["ident"]!=40 && $pronomVerbe["c"]["ident"]!=41){
+                    if(!$this->isEli($verbe) || $pronomVerbe["c"]["lib"] == $pronomVerbe["c"]["eli"]){
+                        $verbe = $pronomVerbe["c"]["lib"]." ".$verbe; 
+                    }else{
+                        $verbe = $pronomVerbe["c"]["eli"].$verbe; 
+                    }
+                }
+            }
+            //les deux parties de la négation se placent avant le verbe pour les valeurs 1, 2, 3, 4, 7 et 8
+            //uniquement pour l'infinitif 
+            if($flux["det"][1]==9 && in_array($flux["det"][0], [1,2,3,4,7,8])){
+                $verbe = "ne ".$accVerbe['finneg']." ".$verbe;
+            }else{
+                if($accVerbe['finneg']!=""){
+                    $verbe = $this->isEli($verbe) ? "n'".$verbe : "ne ".$verbe;
+                    $verbe." ".$accVerbe['finneg'];
+                }
+            }
+            $flux["text"] = $verbe;
+        }		
+        //gestion de l'ordre inverse
+        if($flux["det"][5]==1){
+            $verbe .= "-";
+            if($pronomVerbe["c"]){
+                if(!$this->isEli($verbe)){
+                    $verbe = $pronomVerbe["c"]["lib"]." ".$verbe; 
+                }else{
+                    $verbe = $pronomVerbe["c"]["eli"].$verbe; 
+                }
+            }	
+            $c = substr($verbe,strlen($verbe)-1);
+            if(($c == "e" || $c == "a") && $accVerbe['prs']==3){
+                $verbe .= "t-"; 
+            }elseif($c == "e" && $accVerbe['prs']==1){
+                $verbe = substr($verbe,0,-2)."é-"; 
+            }
+            if($this->isEli($verbe) && $accVerbe['finneg']!=""){
+                $verbe = "n'".$verbe.$pronomVerbe["s"]["lib"]." ".$accVerbe["finneg"]; 
+            }else{
+                $verbe = "ne ".$verbe.$pronomVerbe["s"]["lib"]." ".$accVerbe["finneg"];
+            }
+            $flux["text"] = $verbe;
+        }
+
+        //gestion de l'ordre normal
+		if(!$flux["text"]){
+			$verbe .= " ".$accVerbe["finneg"];
+		
+			if($pronomVerbe["c"]){
+				//si le pronom eli = le pronom normal on met un espace
+				if(!$this->isEli($verbe) || $pronomVerbe["c"]["lib"] == $pronomVerbe["c"]["eli"]){
+					$verbe = $pronomVerbe["c"]["lib"]." ".$verbe; 
+				}else{
+					$verbe = $pronomVerbe["c"]["eli"].$verbe; 
+				}
+			}	
+			if($accVerbe["finneg"]){
+				if($this->isEli($verbe)){
+					$verbe = "n'".$verbe; 
+				}else{
+					$verbe = "ne ".$verbe; 
+				}
+			}	
+			if($pronomVerbe["s"]){
+				if($this->isEli($verbe)){
+					//vérification de l'apostrophe
+					if (strrpos($pronomVerbe["s"]["lib"], "'") === false) { 
+						$verbe = $pronomVerbe["s"]["eli"]." ".$verbe; 
+					}else
+                        $verbe = $pronomVerbe["s"]["eli"].$verbe; 
+				}else{
+					$verbe = $pronomVerbe["s"]["lib"]." ".$verbe; 
+				}
+			}
+            $flux["text"] = $verbe;	
+		}
+		return $flux;
+
+    }
+
+
 
     /**
      * génère à partir d'une existence du JDC
@@ -1499,6 +1769,10 @@ class Moteur {
 		return $arr;
 	}
 
+
+    
+    
+
     /**
      * génére un flux item
      *
@@ -1645,6 +1919,7 @@ class Moteur {
         return $this->arrFlux[$this->ordre];
 
     }
+
 
     /**
      * Recupère le vecteur genre nombre
@@ -2270,7 +2545,7 @@ class Moteur {
         
         if(count($arrGen)==1){
 		    if(strpos($gen,"#")){
-                $genCompo['det'] = str_replace("#","",$gen); 
+                $genCompo['syn'] = $gen; 
             }else{
                 $genCompo['class']=$arrGen[0];
             }

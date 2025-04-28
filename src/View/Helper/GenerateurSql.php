@@ -7,20 +7,39 @@ use Generateur\Generateur\Moteur;
 class GenerateurSql extends AbstractHelper
 {
     protected $api;
-    protected $conn;
+    protected $cnx;
     protected $logger;
     protected $cache;
     protected $moteur;
     protected $rs;
+    protected $temps = [
+        1=>'indicatif présent',
+        2=>'indicatif imparfait',
+        3=>'passé simple',
+        4=>'futur simple',
+        5=>'conditionnel présent',
+        6=>'subjonctif présent',
+        7=>'indicatif présent',
+        8=>'participe présent',
+        9=>'infinitif',
+    ];
+    var $personnes = [
+        1=>['lexinfo:firstPersonForm',0,391,1],        
+        2=>['lexinfo:secondPersonForm',0,381,2],        
+        3=>['lexinfo:thirdPersonForm',0,352,3],        
+        4=>['lexinfo:firstPersonForm',1,391,1],        
+        5=>['lexinfo:secondPersonForm',1,381,2],        
+        6=>['lexinfo:thirdPersonForm',1,352,3]        
+    ];
 
     /* plus nécessaire car la base est nettoyée
     var $idsDicosPropres = [4 , 14, 16, 34, 38, 39, 40, 41, 42, 44, 46, 67, 68, 69, 70, 73, 82, 93, 94, 96, 99, 101, 102, 112, 118, 122, 123, 124, 129, 130, 132, 134, 135, 137, 140, 141, 142, 144, 145, 146, 147, 148, 149, 150, 155, 163];
     */
-    public function __construct($api, $conn, $logger)
+    public function __construct($api, $cnx, $logger)
     {
         $this->logger = $logger;
         $this->api = $api;
-        $this->conn = $conn;
+        $this->cnx = $cnx;
     }
 
     /**
@@ -57,10 +76,18 @@ class GenerateurSql extends AbstractHelper
             case 'getRandomFlux':
                 $result = $this->getRandomFlux($params);
                 break;                                                                                  
+            case 'deleteOeuvre':
+                //ATTENTION DANGEREU : la suppression d'une oeuvre supprime TOUTES les ressources associées 
+                $result = $this->deleteOeuvre($params['idOeuvre']);
+                break;
         }                       
 
         return $result;
 
+    }
+
+    function getCnx(){
+        return $this->cnx;
     }
 
     function initCache(){
@@ -72,7 +99,8 @@ class GenerateurSql extends AbstractHelper
             $this->cache['concepts'] = [];
             $this->cache['determinants'] = [];
             $this->cache['oeuvresCpt'] = [];
-            $this->cache['accords'] = [];            
+            $this->cache['accords'] = []; 
+            $this->cache['pronoms'] = [];           
         }
     }   
 
@@ -112,7 +140,7 @@ class GenerateurSql extends AbstractHelper
                 AND vCpt.property_id = 189 
             WHERE r.resource_class_id = 107 AND r.id = ?
             GROUP BY r.id ORDER BY r.id ";
-        $rs = $this->conn->fetchAll($query,[$params['idTerm']]);
+        $rs = $this->cnx->fetchAll($query,[$params['idTerm']]);
         foreach ($rs as $i => $v) {
             //if($i<9294)continue;
             $this->logger->info(
@@ -122,9 +150,9 @@ class GenerateurSql extends AbstractHelper
 
             //supprime les enregistrements pour ce term
             $delete = "DELETE FROM gen_flux WHERE ordre_id IN (SELECT id FROM gen_ordre WHERE term_id = ?)";
-            $this->conn->executeQuery($delete,[$v['idTerm']]);
+            $this->cnx->executeQuery($delete,[$v['idTerm']]);
             $delete = "DELETE FROM gen_ordre WHERE term_id = ?";
-            $this->conn->executeQuery($delete,[$v['idTerm']]);
+            $this->cnx->executeQuery($delete,[$v['idTerm']]);
             //$this->logger->info('Terme supprimé'.' : '.$v['idTerm']);
 
             //met à jour les relations
@@ -146,8 +174,8 @@ class GenerateurSql extends AbstractHelper
                 //ajoute l'ordre dans le générateur
                 $insert = "INSERT INTO gen_ordre (term_id, code_id, ordre, conditionnel) 
                     VALUES (?, ?, ?, ?)";                          
-                $this->conn->executeQuery($insert,[$v['idTerm'],$idCode['id'],$g[1],$g[1] > $posCondiDeb && $g[1] < $posCondiFin ? 1 : 0]);
-                $idOrdre=$this->conn->lastInsertId();    
+                $this->cnx->executeQuery($insert,[$v['idTerm'],$idCode['id'],$g[1],$g[1] > $posCondiDeb && $g[1] < $posCondiFin ? 1 : 0]);
+                $idOrdre=$this->cnx->lastInsertId();    
 
                 /*on enregistre la décomposition pour chaque concept et chaque oeuvre 
                 car un concept est lié à un dictionnaire lui même en rapport avec des oeuvres ayant leurs propres dictionnaires
@@ -163,19 +191,20 @@ class GenerateurSql extends AbstractHelper
                         on prend en priorité la valeur de cpt1 puis on vérifie si value n'est pas un concept dans cette oeuvre
                         */
                         $idCpt1 = isset($idCode['cpt1']) ? $this->getIdCpt($idCode['cpt1'],$o['idsDico']) : null;
-                        $idCpt1 = !isset($idCpt1) && !isset($idCode['determinant']) ? $this->getIdCpt($idCode['value'],$o['idsDico']) : $idCpt1;
+                        $idCpt1 = !isset($idCpt1) && !isset($idCode['det']) ? $this->getIdCpt($idCode['value'],$o['idsDico']) : $idCpt1;
                         $pInsert = [
                             'oeuvre_id' => $o['idOeuvre'],
                             'concept_id' => $idCpt,
                             'ordre_id' => $idOrdre,
-                            'determinant_id' => isset($idCode['determinant']) ? $this->getIdDeterminant($idCode['determinant'],$o['idsDico']) : null,
+                            'syn_id' => isset($idCode['syn']) ? $this->getIdDeterminant($idCode['syn'],$o['idsDico']) : null,
+                            'det_id' => isset($idCode['det']) ? $this->getIdDeterminant($idCode['det'],$o['idsDico']) : null,
                             'cpt1_id' => $idCpt1,
                             'cpt2_id' => isset($idCode['cpt2']) ? $this->getIdCpt($idCode['cpt2'],$o['idsDico']) : null
                             ];
-                        $insert = "INSERT INTO gen_flux (oeuvre_id, concept_id, ordre_id, determinant_id, cpt1_id, cpt2_id) 
-                            VALUES (?, ?, ?, ?, ?, ?)";
-                        $this->conn->executeQuery($insert,[$pInsert['oeuvre_id'],$pInsert['concept_id'],$pInsert['ordre_id'],
-                            $pInsert['determinant_id'],$pInsert['cpt1_id'],$pInsert['cpt2_id']]);
+                        $insert = "INSERT INTO gen_flux (oeuvre_id, concept_id, ordre_id, syn_id, det_id, cpt1_id, cpt2_id) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $this->cnx->executeQuery($insert,[$pInsert['oeuvre_id'],$pInsert['concept_id'],$pInsert['ordre_id'],
+                            $pInsert['syn_id'],$pInsert['det_id'],$pInsert['cpt1_id'],$pInsert['cpt2_id']]);
 
                         //explode les concepts associés
                         if($pInsert['cpt1_id']) $this->explodeConcept(["idConcept"=>$pInsert['cpt1_id'],'niv'=>$params['niv']+1]);
@@ -199,8 +228,8 @@ class GenerateurSql extends AbstractHelper
                 //ajoute l'ordre dans le générateur
                 $insert = "INSERT INTO gen_ordre (term_id, code_id, ordre, conditionnel) 
                     VALUES (?, ?, ?, ?)";                          
-                $this->conn->executeQuery($insert,[$v['idTerm'],$idCode['id'],$d[1],$d[1] > $posCondiDeb && $d[1] < $posCondiFin ? 1 : 0]);
-                $idOrdre=$this->conn->lastInsertId();       
+                $this->cnx->executeQuery($insert,[$v['idTerm'],$idCode['id'],$d[1],$d[1] > $posCondiDeb && $d[1] < $posCondiFin ? 1 : 0]);
+                $idOrdre=$this->cnx->lastInsertId();       
             }
             //$this->logger->info('Fin Traitement du term : '.$i);
         }
@@ -250,7 +279,7 @@ class GenerateurSql extends AbstractHelper
                     LEFT JOIN value vPrefix ON vPrefix.resource_id = r.id AND vPrefix.property_id = 185
             WHERE r.resource_class_id = 107  
             ";
-        $rs = $this->conn->fetchAll($query,[$params['idConcept']]);
+        $rs = $this->cnx->fetchAll($query,[$params['idConcept']]);
         foreach ($rs as $i => $v) {
             //if($i<9294)continue;
             $this->logger->info(
@@ -260,9 +289,9 @@ class GenerateurSql extends AbstractHelper
 
             //supprime les enregistrements pour ce term
             $delete = "DELETE FROM gen_flux WHERE ordre_id IN (SELECT id FROM gen_ordre WHERE term_id = ?)";
-            $this->conn->executeQuery($delete,[$v['idTerm']]);
+            $this->cnx->executeQuery($delete,[$v['idTerm']]);
             $delete = "DELETE FROM gen_ordre WHERE term_id = ?";
-            $this->conn->executeQuery($delete,[$v['idTerm']]);
+            $this->cnx->executeQuery($delete,[$v['idTerm']]);
             //$this->logger->info('Terme supprimé'.' : '.$v['idTerm']);
 
             //met à jour les relations
@@ -298,14 +327,15 @@ class GenerateurSql extends AbstractHelper
             $this->initCache();
             $params['niv']=1;
             $deb = microtime(true);
+            $this->cache['idsDico'] = $this->getConceptsOeuvres($params['idConcept'])[0]['idsDico'];
         }
 
         //pas besoin des idOeuvre et IdDico $query = "SELECT odct.oeuvre_id, odct.dico_id, odct.concept_id, odct.term_id, 
         $query = "SELECT odct.concept_id cpt_id, odct.term_id, 
 				vType.value type,
                 o.ordre, o.conditionnel cond, 
-                c.value, c.determinant det, c.cpt1, c.cpt2,
-                f.determinant_id det_id, f.cpt1_id, f.cpt2_id
+                c.value, c.det det, c.cpt1, c.cpt2,
+                f.syn_id, det_id, f.det_id det_id, f.cpt1_id, f.cpt2_id
             FROM gen_oeuvre_dico_concept_term odct
 			LEFT JOIN value vType ON vType.resource_id = odct.term_id AND vType.property_id = 196
             LEFT JOIN gen_ordre o ON o.term_id = odct.term_id
@@ -323,13 +353,13 @@ class GenerateurSql extends AbstractHelper
         $query .= " GROUP BY o.term_id, o.ordre
             ORDER BY o.ordre";
         if(!isset($params['idTerm'])){
-            $rs = $this->conn->fetchAll($query,[$params['idConcept'],$params['idConcept']]);
+            $rs = $this->cnx->fetchAll($query,[$params['idConcept'],$params['idConcept']]);
             if(!$rs){
                 //$this->logger->err('Pas de flux trouvé pour le concept : '.$idConcept);
                 return ["error"=>'Pas de flux trouvé pour le concept : '.$params['idConcept']];
             }
         }else{
-            $rs = $this->conn->fetchAll($query,[$params['idConcept'],$params['idConcept'],$params['idTerm']]);
+            $rs = $this->cnx->fetchAll($query,[$params['idConcept'],$params['idTerm']]);
             if(!$rs){
                 //$this->logger->err('Pas de flux trouvé pour le concept : '.$idConcept.' et le terme '.$params['idTerm']);
                 return ["error"=>'Pas de flux trouvé pour le concept '.$params['idConcept'].' et le terme '.$params['idTerm']];
@@ -339,13 +369,21 @@ class GenerateurSql extends AbstractHelper
         for ($i=0; $i < $nbOrdre; $i++) { 
             $v = $rs[$i];
             $rs[$i]['niv'] = $params['niv'];
+            if($v['syn_id'])$this->getSynAccords($v['syn_id']);
             if($v['det_id'])$this->getTermAccords($v['det_id']);
             for ($j=1; $j < 3; $j++) { 
                 if($v['cpt'.$j.'_id']){
-                    $rs[$i]['fluxCpt'.$j] = $this->getRandomFlux(['idConcept'=>$v['cpt'.$j.'_id'],'niv'=>$params['niv']+1]);
+                    $rs[$i]['cpt'.$j.'_flux'] = $this->getRandomFlux(['idConcept'=>$v['cpt'.$j.'_id'],'niv'=>$params['niv']+1]);
                 }
             }
             if($v['type']!="generateur")$this->getTermAccords($v['term_id']);
+            if(strlen($v['det'])>6)$this->getVerbeAccords($rs[$i], $this->cache['idsDico']);
+            //vérifie si le génrateur est un verbe à l'infinitif
+            if($v['type']=="generateur" && $v['det']=="" && substr($v['value'],0,2)=="v_"){
+                $rs[$i]['det'] = "09000000";
+                $this->getVerbeAccords($rs[$i], $this->cache['idsDico']);
+            }
+
             //supprime les valeurs nulles
             $rs[$i] = array_filter($rs[$i], function($value) {
                 return $value !== null;
@@ -361,11 +399,115 @@ class GenerateurSql extends AbstractHelper
         return $rs;
     }
 
+    function getVerbeAccords($flux,$idsDico){ 
+
+        //dans le cas d'un verbe théorique on ne fait rien
+		if($flux["value"]=="v_théorique")return $flux; 
+
+        //récupère le déterminant du verbe
+        $this->getDetVerbe($flux['det'], $idsDico);
+        
+        //récupère le temps
+        $mood = $this->temps[$flux["det"][1]];
+        //récupère la personne
+        switch ($flux["det"][2]) {
+            case 7:
+            case 9:
+                $p = $this->personnes[6];
+                break;            
+            case 8:
+            case 0:
+                $p = $this->personnes[3];
+                break;            
+            default:
+                $p = $this->personnes[$flux["det"][2]];
+                break;
+        }
+    
+        //récupère la terminaison
+        $query="SELECT 
+                vR.value_annotation_id,
+                vAnno.value
+            FROM resource r
+            inner join value vR on vR.resource_id = r.id AND vR.property_id = 192 AND vR.value = ?
+            inner join value vAnno on vAnno.resource_id = vR.value_annotation_id AND vAnno.property_id = ?
+            WHERE r.id = ?
+            LIMIT 1 OFFSET ".$p[1];
+        $acc = $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0];
+        $rs = $this->cnx->fetchAssoc($query,[$mood,$p[2],$acc['idConj']]);
+        $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0]['tms']=$rs['value']=="---" || $rs['value']=="- " ? "" : $rs['value'];		
+
+        //récupère la négation
+        if($flux['det'][0]!=""){
+            $query = "select r.id, vTitle.value lib 
+                from resource r
+                    inner join value vId on vId.resource_id = r.id and vId.property_id = 10 and vId.value = ?
+                    inner join value vDico on vDico.resource_id = r.id and vDico.property_id = 501 and vDico.value_resource_id IN (".$idsDico.") 
+                    inner join value vTitle on vTitle.resource_id = r.id and vTitle.property_id = 1
+                where r.resource_class_id = 115 ";
+            $rs = $this->cnx->fetchAssoc($query,[$flux['det'][0]]);
+            $neg = $rs['value']=="-" ? " ":$rs['lib'];
+        }else{
+            $neg = "";
+        }
+             
+        //complète les accords
+        //$this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0]['temps']=$mood;		
+        $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0]['pluriel']=$p[1];		
+        $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0]['finneg']=$neg;		
+        $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0]['prs']=$p[3];		
+
+    }
+
+
+    function getDetVerbe($det,$idsDico){
+        /*
+        Position 0 : type de négation
+        Position 1 : temps verbal
+        Position 2 : pronoms sujets définis
+        Positions 3 ET 4 : pronoms compléments
+        Position 5 : ordre des pronoms sujets
+        Position 6 : pronoms indéfinis
+        Position 7 : Place du sujet dans la chaîne grammaticale
+        */
+        $kDet = "detVerbe".$det[2].$det[3].$det[4].$det[6];
+        if(!isset($this->cache['accords'][$kDet])){
+            $sujet = $det[2] ? $this->getPronom($det[2], 'sujet', $idsDico) : "";
+            $comp = $det[3] || $det[4] ? $this->getPronom($det[3].$det[4], 'complement', $idsDico) : "";
+            $indef = $det[6] ? $this->getPronom($det[6], 'sujet indéfini', $idsDico) : "";
+            $this->cache['accords'][$kDet]=['s'=>$sujet,'c'=>$comp,'i'=>$indef];
+        }
+        return $this->cache['accords'][$kDet];
+    }
+
     function getDuree($debut,$fin){
         $elapsed = $fin - $debut;
         $minutes = floor($elapsed / 60);
         $seconds = $elapsed % 60;
         return sprintf('%d minutes and %.2f seconds', $minutes, $seconds);
+    }
+
+
+    /**
+     * Récupère les accords d'un syntagme
+     *
+     * @param integer     $idSyn l'identifiant du terme
+     *
+    */
+    function getSynAccords($idSyn){
+
+
+        if(!isset($this->cache['accords']["syn".$idSyn])){
+            $query = "SELECT 
+                r.id,
+                r.resource_class_id class,
+                vTitle.value lib 
+                FROM resource r
+                    INNER JOIN value vTitle ON vTitle.resource_id = r.id AND vTitle.property_id = 1
+                WHERE r.id = ? ";
+            $this->cache['accords']["syn".$idSyn] = $this->cnx->fetchAssoc($query,[$idSyn]);
+        }
+        return $this->cache['accords']["syn".$idSyn];
     }
 
     /**
@@ -396,7 +538,7 @@ FROM resource r
 	LEFT JOIN value vConj ON vConj.resource_id = r.id AND vConj.property_id = 193
 WHERE r.id = ?
 group by vAnno.resource_id";
-            $rs = $this->conn->fetchAll($query,[$idTerm]);
+            $rs = $this->cnx->fetchAll($query,[$idTerm]);
             //
             if($rs){
                 //supprime les valeurs nulles
@@ -414,6 +556,33 @@ group by vAnno.resource_id";
 
 
     /**
+     * Récupère un pronom
+     *
+     * @param integer     $idTerm l'identifiant du terme
+     *
+    */
+    function getPronom($id, $type, $idDicos){
+
+        if(!isset($this->cache['pronoms'][$id.$type.'_'.$idDicos])){
+            $query = "select r.id, vId.value ident
+                , vTitle.value lib, vEli.value eli
+                , vType.value type
+                from resource r
+                    inner join value vId on vId.resource_id = r.id and vId.property_id = 10 and vId.value = ?
+                    inner join value vDico on vDico.resource_id = r.id and vDico.property_id = 501 and vDico.value_resource_id IN (".$idDicos.") 
+                    inner join value vType on vType.resource_id = r.id and vType.property_id = 8 and vType.value = ?
+                    inner join value vTitle on vTitle.resource_id = r.id and vTitle.property_id = 1
+                    inner join value vEli on vEli.resource_id = r.id and vEli.property_id = 195
+                where r.resource_class_id = 112";
+                $rs = $this->cnx->fetchAssoc($query,[intval($id),$type]);
+                if($rs['lib']=="[=1|a_zéro]")$rs['lib']="";
+                if($rs['eli']=="[=1|a_zéro]")$rs['el']="";
+                $this->cache['pronoms'][$id.$type.'_'.$idDicos] = $rs;
+        }
+        return $this->cache['pronoms'][$id.$type.'_'.$idDicos];
+    }   
+
+    /**
      * Met à jour les relations entre les oeuvre, les dicos, les concepts et les termes
      *
      * @param string     $gen le code générateur
@@ -421,7 +590,7 @@ group by vAnno.resource_id";
     */
     function updateOeuvreDicoConceptTerm($idTerm){
         $query = "DELETE FROM gen_oeuvre_dico_concept_term WHERE term_id = ?";
-        $this->conn->executeQuery($query,[$idTerm]);
+        $this->cnx->executeQuery($query,[$idTerm]);
         $query = "INSERT INTO gen_oeuvre_dico_concept_term(term_id, concept_id, dico_id, oeuvre_id)
             SELECT 
                 r.id idTerm,
@@ -435,7 +604,7 @@ group by vAnno.resource_id";
                 INNER JOIN resource rOeu ON rOeu.id = vOeu.resource_id AND rOeu.resource_class_id = 409
             WHERE
                 r.resource_class_id = 107 AND r.id = ?";
-        $this->conn->executeQuery($query,[$idTerm]);
+        $this->cnx->executeQuery($query,[$idTerm]);
     }
 
     /**
@@ -450,15 +619,15 @@ group by vAnno.resource_id";
             return $this->cache['codes'][$gen];
         }
         $query = "SELECT * FROM gen_code WHERE value = ?";
-        $rsCode = $this->conn->fetchAssoc($query,[$gen]);
+        $rsCode = $this->cnx->fetchAssoc($query,[$gen]);
         if(!$rsCode) {
             //décompose le générateur
             $compo = $this->moteur->explodeCode($gen);
             //ajoute le code du générateur                        
-            $insert = "INSERT INTO gen_code (value, determinant, cpt1, cpt2) 
-                VALUES (?, ?, ?, ?)";
-            $this->conn->executeQuery($insert,[$gen,$compo['det'],$compo['cpt1'],$compo['cpt2']]);
-            $this->cache['codes'][$gen]=$this->conn->fetchAssoc("SELECT * FROM gen_code WHERE id=".$this->conn->lastInsertId());
+            $insert = "INSERT INTO gen_code (value, syn, det, cpt1, cpt2) 
+                VALUES (?, ?, ?, ?, ?)";
+            $this->cnx->executeQuery($insert,[$gen,$compo['syn'],$compo['det'],$compo['cpt1'],$compo['cpt2']]);
+            $this->cache['codes'][$gen]=$this->cnx->fetchAssoc("SELECT * FROM gen_code WHERE id=".$this->cnx->lastInsertId());
         }else{
             $this->cache['codes'][$gen]=$rsCode;
         }
@@ -481,7 +650,7 @@ group by vAnno.resource_id";
             INNER JOIN value vDico on vDico.resource_id = r.id AND vDico.property_id = 501 AND vDico.value_resource_id IN ('.$idsDico.') 
             INNER JOIN value v on v.resource_id = r.id AND v.property_id = 1 AND v.value = ? 
             WHERE r.resource_class_id = 106';
-        $rs = $this->conn->fetchAssoc($query,[$cpt]);
+        $rs = $this->cnx->fetchAssoc($query,[$cpt]);
         if(!$rs){
             $this->logger->err('Pas de concept trouvé : '.$cpt.' - '.$idsDico);
             $this->cache['concepts'][$cpt.'-'.$idsDico] = null;
@@ -501,6 +670,8 @@ group by vAnno.resource_id";
     */
 	public function getIdDeterminant($det,$idsDico){
 
+        if(!$det)return;
+
         //vérifie si le déterminant est déjà en cache
         if(isset($this->cache['determinants'][$det.'-'.$idsDico])){
             return $this->cache['determinants'][$det.'-'.$idsDico];
@@ -510,8 +681,19 @@ group by vAnno.resource_id";
         if(substr($det,0,1)=='=')$this->cache['determinants'][$det.'-'.$idsDico]=null;
 
         //vérifie si le déterminant est pour un verbe
-        if(strlen($det) > 6)$this->cache['determinants'][$det.'-'.$idsDico]=null;
-        
+        if(strlen($det) > 6)return;
+
+        //vérifie si le déterminant est un syntagme
+        if(substr($det,-1)=='#'){
+            $query = 'SELECT r.id FROM resource r 
+                INNER JOIN value vDico on vDico.resource_id = r.id AND vDico.property_id = 501 AND vDico.value_resource_id IN ('.$idsDico.') 
+                INNER JOIN value v on v.resource_id = r.id AND v.property_id = 10 AND v.value = ? 
+                WHERE r.resource_class_id = 114';
+            $rs = $this->cnx->fetchAssoc($query,[substr($det,0,-1)]);
+            $this->cache['determinants'][$det.'-'.$idsDico] = $rs['id'];
+            return $this->cache['determinants'][$det.'-'.$idsDico];
+        };
+
         //vérifie s'il faut chercher le pluriel
         $intDet = intval($det);
         if($intDet >= 50){
@@ -523,8 +705,8 @@ group by vAnno.resource_id";
                 INNER JOIN value vDico on vDico.resource_id = r.id AND vDico.property_id = 501 AND vDico.value_resource_id IN ('.$idsDico.') 
                 INNER JOIN value v on v.resource_id = r.id AND v.property_id = 10 AND v.value = ? 
                 WHERE r.resource_class_id = 113';
-            $rs = $this->conn->fetchAll($query,[$det]);
-            $this->cache['determinants'][$det.'-'.$idsDico] = $rs[0]['id'];
+            $rs = $this->cnx->fetchAssoc($query,[$det]);
+            $this->cache['determinants'][$det.'-'.$idsDico] = $rs['id'];
         }
         return $this->cache['determinants'][$det.'-'.$idsDico];
     }
@@ -564,7 +746,7 @@ group by vAnno.resource_id";
             WHERE
                 r.id = ?
             GROUP BY oeuvre.id";
-        $this->cache['oeuvresCpt'][$idCpt] = $this->conn->fetchAll($query,[$idCpt]);
+        $this->cache['oeuvresCpt'][$idCpt] = $this->cnx->fetchAll($query,[$idCpt]);
         if(count($this->cache['oeuvresCpt'][$idCpt])==0){
             $this->logger->err('Pas d\'oeuvre associée au concept : '.$idCpt);
         }
@@ -587,22 +769,22 @@ group by vAnno.resource_id";
             FROM generateur.gen_adjectifs    
             WHERE id_concept IN (".$ids.")
             GROUP BY elision, prefix, m_s, f_s, m_p, f_p";
-        $rs["adjectifs"] = $this->conn->fetchAll($query);
+        $rs["adjectifs"] = $this->cnx->fetchAll($query);
         $query="SELECT DISTINCT elision, prefix, genre, s, p, group_concat(id_concept) idsCpt, group_concat(id_sub) idsSub  
             FROM generateur.gen_substantifs   
             WHERE id_concept IN (".$ids.")
             GROUP BY elision, prefix, genre, s, p";   
-        $rs["substantifs"] = $this->conn->fetchAll($query);
+        $rs["substantifs"] = $this->cnx->fetchAll($query);
         $query="SELECT DISTINCT id_conj, elision, prefix, group_concat(id_concept) idsCpt, group_concat(id_verbe) idsVerbe  
             FROM generateur.gen_verbes   
             WHERE id_concept IN (".$ids.")
             GROUP BY id_conj, elision, prefix";   
-        $rs["verbes"] = $this->conn->fetchAll($query);
+        $rs["verbes"] = $this->cnx->fetchAll($query);
         $query="SELECT DISTINCT valeur, group_concat(id_concept) idsCpt, group_concat(id_gen) idsGen  
             FROM generateur.gen_generateurs   
             WHERE id_concept IN (".$ids.")
             GROUP BY valeur";
-        $rs["generateurs"] = $this->conn->fetchAll($query);
+        $rs["generateurs"] = $this->cnx->fetchAll($query);
         return $rs;        
     }
 
@@ -628,9 +810,9 @@ group by vAnno.resource_id";
             $query.=" OFFSET ".$offset;
         }
         if($cpt!=null){
-            $rs = $this->conn->fetchAll($query,[$cpt]);
+            $rs = $this->cnx->fetchAll($query,[$cpt]);
         }else{
-            $rs = $this->conn->fetchAll($query);
+            $rs = $this->cnx->fetchAll($query);
         }
         return $rs;        
     }
@@ -675,7 +857,7 @@ group by vAnno.resource_id";
             $query="SELECT COUNT(*) nb, '".$d[0]."' cpt, GROUP_CONCAT(id_concept) idsCpt, GROUP_CONCAT(id_dico) idsDicos
             FROM generateur.gen_concepts 
             WHERE type = ? AND lib = ?";
-            $rs = $this->conn->fetchAll($query,[$type, $lib]);
+            $rs = $this->cnx->fetchAll($query,[$type, $lib]);
             if($rs[0]['nb']==0){
                 $this->logger->err('Pas de concept trouvé : '.$d[0]);
                 continue;
@@ -700,7 +882,7 @@ group by vAnno.resource_id";
         $query='SELECT COUNT(g.id_gen) nb
             FROM generateur.gen_generateurs g
             WHERE g.valeur LIKE "%'.$cpt.'%"';
-        $rs = $this->conn->fetchAll($query);
+        $rs = $this->cnx->fetchAll($query);
         return $rs[0]['nb'];        
     }
 
@@ -719,6 +901,89 @@ group by vAnno.resource_id";
             $rs[]=$v;
         }
         return $rs;        
+    }
+
+    /**
+     * supprime une oeuvre et les dictionnaires associés
+     *
+     * @param   integer    $idOeuvre paramètre de la requête
+     * @return array
+     */
+    function deleteOeuvre($idOeuvre){
+        set_time_limit(0);
+        $rs=[];
+        //récupère les dictionnaires uniquement associés à l'oeuvre
+        $query="SELECT 
+            vOeuvreDicos.value_resource_id idDico,
+            GROUP_CONCAT(DISTINCT r.id) idsOeuvre,
+            COUNT(DISTINCT r.id) nb
+        FROM
+            resource r
+                INNER JOIN
+            value vOeuvreDicos ON vOeuvreDicos.resource_id = r.id
+                AND vOeuvreDicos.property_id = 501
+        WHERE
+            r.resource_class_id = 409
+        GROUP BY vOeuvreDicos.value_resource_id
+        HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1";
+        $rsDico = $this->cnx->fetchAll($query,[$idOeuvre]);
+        foreach ($rsDico as $i => $d) {
+            //récupère les resources uniquement associées à ce dico
+            $query="SELECT 
+                    vDicoRes.resource_id id,
+                    GROUP_CONCAT(DISTINCT r.id) idsDico,
+                    COUNT(DISTINCT r.id) nb
+                FROM
+                    resource r
+                        INNER JOIN
+                    value vDicoRes ON vDicoRes.value_resource_id = r.id
+                        AND vDicoRes.property_id = 501
+                GROUP BY vDicoRes.resource_id
+                HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1";
+            $rsRes = $this->cnx->fetchAll($query,[$d['idDico']]);
+            //récupère les resources uniquement associés à cette resource
+            foreach ($rsRes as $r) {
+                $this->deleteResource($r['id']);
+            }
+            $this->deleteResource($d['idDico']);
+            $this->logger->info('Le dictionnaire '.$d['idDico'].' est supprimée.');
+
+        }
+        //supprime les ressources de l'oeuvre
+        $this->deleteResource($idOeuvre);
+        $this->logger->info("L'oeuvre ".$idOeuvre." est supprimée.");
+    }
+
+    function deleteResource($id){
+        //supprime les resources uniquement associés à cette resource
+        $query="SELECT 
+                r.id,
+                GROUP_CONCAT(DISTINCT vRes.value_resource_id) idsRes,
+                COUNT(DISTINCT vRes.value_resource_id) nb
+            FROM
+                resource r
+                    INNER JOIN value vRes ON vRes.resource_id = r.id
+            GROUP BY r.id
+            HAVING idsRes = ? AND nb = 1";
+        $rs = $this->cnx->fetchAll($query,[$id]);
+        foreach ($rs as $r) {
+            //supprime les resources associés
+            $this->deleteResource($r["id"]);
+        }
+        $query = "DELETE FROM value WHERE resource_id = ?";
+        $this->cnx->executeQuery($query,[$id]);
+        $query = "DELETE FROM resource WHERE id = ?";
+        $this->cnx->executeQuery($query,[$id]);
+        $delete = "DELETE FROM gen_flux WHERE ordre_id IN (SELECT id FROM gen_ordre WHERE term_id = ?)";
+        $this->cnx->executeQuery($delete,[$id]);
+        $query = "DELETE FROM gen_flux WHERE concept_id = ?";
+        $this->cnx->executeQuery($query,[$id]);
+        $delete = "DELETE FROM gen_ordre WHERE term_id = ?";
+        $this->cnx->executeQuery($delete,[$id]);
+        $query = "DELETE FROM gen_oeuvre_dico_concept_term WHERE oeuvre_id = ? OR dico_id = ? OR concept_id = ? OR term_id = ?";
+        $this->cnx->executeQuery($query,[$id,$id,$id,$id]);
+
+        $this->logger->info('La ressource '.$id.' est supprimée.');
     }
 
 }
