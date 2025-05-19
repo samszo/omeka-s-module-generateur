@@ -77,10 +77,17 @@ class GenerateurSql extends AbstractHelper
                 $result = $this->getRandomFlux($params);
                 break;                                                                                  
             case 'deleteOeuvre':
-                //ATTENTION DANGEREU : la suppression d'une oeuvre supprime TOUTES les ressources associées 
+                //ATTENTION DANGEREUX : la suppression d'une oeuvre supprime TOUTES les ressources associées 
                 $result = $this->deleteOeuvre($params['idOeuvre']);
                 break;
-        }                       
+            case 'deleteDico':
+                //ATTENTION DANGEREUX : la suppression d'un DICO supprime TOUTES les ressources associées 
+                $result = $this->deleteDico($params['idDico']);
+                break;
+            case 'getDicoItems':
+                $result = $this->getDicoItems($params);
+                break;
+        }                      
 
         return $result;
 
@@ -104,6 +111,23 @@ class GenerateurSql extends AbstractHelper
         }
     }   
 
+    /**
+     * renvoie les élement d'un dictionnaire
+     *
+     * @param array    $params paramètre de la requête
+     * @return array
+     */
+    function getDicoItems($params){
+        //récupère les générateurs à décomposer avec leurs concepts
+        $query = "select rLR.id, rLR.title, rcLR.local_name, vLRt.value type, rLR.resource_template_id
+            from resource r
+            inner join value vLR on vLR.value_resource_id = r.id
+            inner join resource rLR on rLR.id = vLR.resource_id
+            inner join resource_class rcLR on rcLR.id = rLR.resource_class_id
+            inner join value vLRt on vLRt.resource_id = rLR.id AND vLRt.property_id = 196
+            where r.id = ?";
+        return $this->cnx->fetchAll($query,[$params['idDico']]);
+    }
     /**
      * décompose un générateur en ses composants
      *
@@ -191,7 +215,7 @@ class GenerateurSql extends AbstractHelper
                         on prend en priorité la valeur de cpt1 puis on vérifie si value n'est pas un concept dans cette oeuvre
                         */
                         $idCpt1 = isset($idCode['cpt1']) ? $this->getIdCpt($idCode['cpt1'],$o['idsDico']) : null;
-                        $idCpt1 = !isset($idCpt1) && !isset($idCode['det']) ? $this->getIdCpt($idCode['value'],$o['idsDico']) : $idCpt1;
+                        $idCpt1 = !isset($idCpt1) && !isset($idCode['det']) && !isset($idCode['syn']) ? $this->getIdCpt($idCode['value'],$o['idsDico']) : $idCpt1;
                         $pInsert = [
                             'oeuvre_id' => $o['idOeuvre'],
                             'concept_id' => $idCpt,
@@ -901,6 +925,37 @@ group by vAnno.resource_id";
             $rs[]=$v;
         }
         return $rs;        
+    }
+
+
+    /**
+     * supprime un dictionnaire et les ressources associées
+     *
+     * @param   integer    $idDico paramètre de la requête
+     * @return array
+     */
+    function deleteDico($idDico){
+        set_time_limit(0);
+        $rs=[];
+        //récupère les resources uniquement associées à ce dico
+        $query="SELECT 
+                vDicoRes.resource_id id,
+                GROUP_CONCAT(DISTINCT r.id) idsDico,
+                COUNT(DISTINCT r.id) nb
+            FROM
+                resource r
+                    INNER JOIN
+                value vDicoRes ON vDicoRes.value_resource_id = r.id
+                    AND vDicoRes.property_id = 501
+            GROUP BY vDicoRes.resource_id
+            HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1";
+        $rsRes = $this->cnx->fetchAll($query,[$idDico]);
+        //récupère les resources uniquement associés à cette resource
+        foreach ($rsRes as $r) {
+            $this->deleteResource($idDico);
+        }
+        $this->deleteResource($idDico);
+        $this->logger->info('Le dictionnaire '.$idDico.' est supprimée.');
     }
 
     /**

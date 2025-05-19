@@ -264,23 +264,26 @@ class Moteur {
         //vérifie s'il faut chercher le pluriel
         $flux['pluriel'] = intval($flux["det"]) >= 50 ? true : false;
         
-        //récupère les accords du premier flux
-        if($flux['cpt1_flux']){
-            $acc1 = $this->arrFlux['accords'][$flux['cpt1_flux'][0]["term_id"]][0];
-            $cpt1Vals = explode(",",$acc1['vals']);
-            $cpt1Props = explode(",",$acc1['props']);
-            $kEli = array_search(195, $cpt1Props); 
-            $flux['elision']=$cpt1Vals[$kEli];
-            $kPlur = array_search(504, $cpt1Props); 
-            if($kPlur){
-                $flux['genre'] = 'feminin';
-            }else{
-                $kPlur = array_search(505, $cpt1Props); 
-                $flux['genre'] = 'masculin';
+        //récupère les accords des flux
+        $cpt=[];
+        for ($i=1; $i < 3; $i++) {
+            $idCpt = "cpt".$i."_flux"; 
+            if($flux[$idCpt]){
+                $acc = $this->arrFlux['accords'][$flux[$idCpt][0]["term_id"]][0];
+                $cpt[$idCpt] = ["vals"=>explode(",",$acc['vals']),"props"=> explode(",",$acc1['props'])];
+                $kEli = array_search(195, $cpt[$idCpt]["props"]);//TODO: gérer l'identifiant de propriété 
+                $cpt[$idCpt]['elision']=$cpt[$idCpt]["vals"][$kEli];
+                $kPlur = array_search(504, $cpt[$idCpt]["props"]);//TODO: gérer l'identifiant de propriété 
+                if($kPlur){
+                    $flux['genre'] = 'feminin';
+                }else{
+                    $kPlur = array_search(505, $cpt1Props); 
+                    $flux['genre'] = 'masculin';
+                }
+                
             }
-
         }
-        //le deuxième flux s'accorde sur le premier
+        //récupère les accords du deuxième flux
         
 
         //si aucun flux de concept le vecteur est maculin singulier sans élision
