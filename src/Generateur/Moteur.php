@@ -238,7 +238,7 @@ class Moteur {
 		//mise en forme du texte
 		$this->coupures();
 
-        return $params['structure'] ? ['struture'=>$this->arrFlux,'texte'=>$this->texte] : $this->texte;
+        return $params['structure'] ? ['strct'=>$this->arrFlux,'texte'=>$this->texte] : $this->texte;
     }
 
 
@@ -277,7 +277,7 @@ class Moteur {
                 if($kPlur){
                     $flux['genre'] = 'feminin';
                 }else{
-                    $kPlur = array_search(505, $cpt1Props); 
+                    $kPlur = array_search(505, $cpt[$idCpt]["props"]); 
                     $flux['genre'] = 'masculin';
                 }
                 

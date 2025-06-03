@@ -87,6 +87,9 @@ class GenerateurSql extends AbstractHelper
             case 'getDicoItems':
                 $result = $this->getDicoItems($params);
                 break;
+            case 'getConceptTerms':
+                $result = $this->getConceptTerms($params);
+                break;
         }                      
 
         return $result;
@@ -119,7 +122,8 @@ class GenerateurSql extends AbstractHelper
      */
     function getDicoItems($params){
         //récupère les générateurs à décomposer avec leurs concepts
-        $query = "select rLR.id, rLR.title, rcLR.local_name, vLRt.value type, rLR.resource_template_id
+        $query = "select rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
+                rcLR.local_name, vLRt.value type
             from resource r
             inner join value vLR on vLR.value_resource_id = r.id
             inner join resource rLR on rLR.id = vLR.resource_id
@@ -128,6 +132,46 @@ class GenerateurSql extends AbstractHelper
             where r.id = ?";
         return $this->cnx->fetchAll($query,[$params['idDico']]);
     }
+
+    /**
+     * renvoie les terms d'un concept
+     *
+     * @param array    $params paramètre de la requête
+     * @return array
+     */
+    function getConceptTerms($params){
+        //récupère les générateurs à décomposer avec leurs concepts
+        $query = "select rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
+                rcLR.local_name, vLRt.value type
+                , vPrefix.value prefix
+                , vGender.value gender
+                , vConj.value conj
+                , vEli.value eli
+                , vGen.value gen
+                , vAccord.resource_id accord_id
+                , vAccord.accords
+from resource r
+inner join value vLR on vLR.value_resource_id = r.id
+inner join resource rLR on rLR.id = vLR.resource_id
+inner join resource_class rcLR on rcLR.id = rLR.resource_class_id
+inner join value vLRt on vLRt.resource_id = rLR.id AND vLRt.property_id = 196
+left join value vPrefix on vPrefix.resource_id = rLR.id AND vPrefix.property_id = 185
+left join value vGender on vGender.resource_id = rLR.id AND vGender.property_id = 339
+left join value vConj on vConj.resource_id = rLR.id AND vConj.property_id = 193
+left join value vEli on vEli.resource_id = rLR.id AND vEli.property_id = 195
+left join value vGen on vGen.resource_id = rLR.id AND vGen.property_id = 187
+left join value vAnnoId on vAnnoId.resource_id = rLR.id AND vAnnoId.property_id = 506
+left join (SELECT 
+    GROUP_CONCAT(CONCAT(p.local_name,' : ',v.value)) accords,
+    v.resource_id
+FROM
+    value v
+    inner join property p on p.id = v.property_id
+GROUP BY v.resource_id    
+    ) vAccord on vAccord.resource_id = vAnnoId.value_annotation_id
+where r.id = ?";
+        return $this->cnx->fetchAll($query,[$params['idCpt']]);
+    }    
     /**
      * décompose un générateur en ses composants
      *
@@ -1042,6 +1086,13 @@ group by vAnno.resource_id";
     }
 
 }
+
+/*extraction des partie dures d'un générateur
+SELECT v.value, REGEXP_SUBSTR(v.value, '\\[(.*?)\\]') AS extracted_text
+, REGEXP_REPLACE(v.value, '\\[(.*?)\\]','') AS textDur
+FROM resource r
+inner join value v ON v.resource_id = r.id AND v.property_id = 187
+WHERE r.resource_class_id = 107 
 
 /*récupère les erreurs lors d'une explosion des concepts
 SELECT distinct message FROM `log` WHERE `message` LIKE '%Pas d\'oeuvre associée au concept :%';
