@@ -225,7 +225,7 @@ class Moteur {
 
 		for ($i = $ordreDeb; $i <= $ordreFin; $i++) {
 			$this->ordre = $i;
-            $this->arrFlux[$i] = $this->setAccordsFlux($this->arrFlux[$i]);
+            $this->arrFlux[$i] = $this->setAccordsFlux($this->arrFlux[$i], $i);
             $this->texte .= " ".$this->arrFlux[$i]['text'];
 		}
 		
@@ -246,10 +246,11 @@ class Moteur {
      * calcul les accords d'un flux
      *
      * @param array 	$flux
+     * @param int 	    $num
      *
      * return array
      */
-	function setAccordsFlux($flux){
+	function setAccordsFlux($flux,$num){
 
         //vérifie si on gère un syntagme
         if($flux["syn_id"]){
@@ -258,93 +259,192 @@ class Moteur {
             return $flux;
         }
 
+        //vérifie si on gère une chaine de caractères
+        if(!isset($flux["det_id"]) && !isset($flux["cpt1_id"]) && isset($flux["value"])){
+            $flux['text'] = $flux['value'];
+            return $flux;
+        }
+
         //vérifie si le déterminant est pour un verbe
         if(strlen($flux["det"]) > 6) return $this->getFluxVerbe($flux);
 
-        //vérifie s'il faut chercher le pluriel
-        $flux['pluriel'] = intval($flux["det"]) >= 50 ? true : false;
+        return $this->getFluxAccord($flux,$num);
+
+    }
+
+    /**
+     * génère un flux
+     *
+     * @param array $flux
+     * @param int $num
+     *
+     */
+	function getFluxAccord($flux, $num){
+
+        $flux['text'] = "";
+
+        //récupère la composition finale du flux
+        $flux['cpt1end'] = $this->getFluxEnd($flux,"cpt1_flux");
+        $flux['cpt2end'] = $this->getFluxEnd($flux,"cpt2_flux");
         
-        //récupère les accords des flux
-        $cpt=[];
-        for ($i=1; $i < 3; $i++) {
-            $idCpt = "cpt".$i."_flux"; 
-            if($flux[$idCpt]){
-                $acc = $this->arrFlux['accords'][$flux[$idCpt][0]["term_id"]][0];
-                $cpt[$idCpt] = ["vals"=>explode(",",$acc['vals']),"props"=> explode(",",$acc1['props'])];
-                $kEli = array_search(195, $cpt[$idCpt]["props"]);//TODO: gérer l'identifiant de propriété 
-                $cpt[$idCpt]['elision']=$cpt[$idCpt]["vals"][$kEli];
-                $kPlur = array_search(504, $cpt[$idCpt]["props"]);//TODO: gérer l'identifiant de propriété 
-                if($kPlur){
-                    $flux['genre'] = 'feminin';
-                }else{
-                    $kPlur = array_search(505, $cpt[$idCpt]["props"]); 
-                    $flux['genre'] = 'masculin';
+        //vérifie s'il faut chercher le pluriel
+        $flux['pluriel'] = isset($flux["det"]) && intval($flux["det"]) >= 50 ? true : false;
+
+        //vérifie si les valeurs genre et nombre sont définies avant.
+        if(isset($flux['det']) && substr($flux['det'],0,1) == "="){
+            //récupère les valeurs
+            $n = intval(substr($flux['det'],1));
+            for ($i=($num-$n); $i >= 0 ; $i--) {
+                if(isset($this->arrFlux[$i]['pluriel'])){
+                    $flux['pluriel'] = $this->arrFlux[$i]['pluriel'];
+                    $flux['genre'] = $this->arrFlux[$i]['genre'];
+                    break;
                 }
-                
             }
         }
-        //récupère les accords du deuxième flux
-        
 
-        //si aucun flux de concept le vecteur est maculin singulier sans élision
-        if(!isset($flux["cpt1_flux"])){
-            $flux['elision'] = "0";
-            $flux['genre'] = "masculin";
+        if(isset($flux['det_id'])){
+            if(isset($flux['cpt1end']) && isset($flux['cpt2end'])){
+                //forme déterminant+adjectif+substantif = [66|a_ancien@argot_étudiant] => det_id, cpt1_flux, cpt2_flux
+                //det_id donne le pluriel
+                //cpt2_flux donne le genre       
+                //cpt1_flux s'accorde avec det_1 et cpt2_flux
+                $flux = $this->calculFluxConcept($flux, 1);
+                $flux = $this->calculFluxConcept($flux, 2);
+                //récupère la propriété de genre et de nombre
+                $flux = $this->calculPropGenreNombre($flux,$flux['cpt2gen']);
+                //calcule l'élision
+                $flux['elision'] = $flux['cpt1gen']['elision'];
+                //calcule le déterminant
+                $flux = $this->calculFluxDeterminant($flux);
+                //construction du texte
+                $keyCpt1 = array_search($this->properties["genex"][$flux['propGenreNombre']]->id(), $flux['cpt1gen']['acc']['props']);
+                $keyCpt2 = array_search($this->properties["genex"][$flux['propGenreNombre']]->id(), $flux['cpt2gen']['acc']['props']);
+                $flux['text'] = $flux['detTxt']
+                    .$flux['cpt1gen']['prefix']
+                    .$flux['cpt1gen']['acc']['vals'][$keyCpt1]
+                    ." ".$flux['cpt2gen']['prefix']
+                    .($keyCpt2 ? $flux['cpt2gen']['acc']['vals'][$keyCpt2] : "");      
+                return $flux;
+            }
+            if(isset($flux['cpt1end']) && !isset($flux['cpt2nd'])){
+                //forme déterminant+substantif = [66|argot_étudiant] => det_id, cpt1_flux
+                //det_id donne le pluriel
+                //cpt1_flux donne le genre et s'accorde avec det_1       
+                $flux = $this->calculFluxConcept($flux, 1);
+                //récupère la propriété de genre et de nombre
+                $flux = $this->calculPropGenreNombre($flux,$flux['cpt1gen']);
+                //calcule l'élision
+                $flux['elision'] = $flux['cpt1gen']['elision'];
+                //calcule le déterminant
+                $flux = $this->calculFluxDeterminant($flux);
+                //construction du texte
+                $keyCpt1 = array_search($this->properties["genex"][$flux['propGenreNombre']]->id(), $flux['cpt1gen']['acc']['props']);
+                $flux['text'] = $flux['detTxt']
+                    .$flux['cpt1gen']['prefix']
+                    .($keyCpt1 && isset($flux['cpt1gen']['acc']['vals'][$keyCpt1]) ? $flux['cpt1gen']['acc']['vals'][$keyCpt1] : "");
+                return $flux;
+            }
+        }else{
+            //forme substantif = [argot_étudiant] => cpt1_flux
+            //cpt1_flux s'accorde au singulier
+            $flux = $this->calculFluxConcept($flux, 1);
+            $flux = $this->calculPropGenreNombre($flux,$flux['cpt1gen']);
+            if(isset($flux['cpt1gen']["text"]))return $flux;
+            else{
+                $keyCpt1 = array_search($this->properties["genex"][$flux['propGenreNombre']]->id(), $flux['cpt1gen']['acc']['props']);
+                $flux['text'] .= $flux['cpt1gen']['prefix']
+                    .($keyCpt1 && isset($flux['cpt1gen']['acc']['vals'][$keyCpt1]) ?$flux['cpt1gen']['acc']['vals'][$keyCpt1]: "");
+            }    
         }
+        return $flux;
 
+    }        
+
+    /**
+     * génère le texte d'un flux concept
+     *
+     * @param array $flux
+     * @param array $cpt
+     *
+     */
+    function calculFluxConcept($flux, $num){
+        //vérifie si le flux est un tableau de concept
+        if(isset($flux['cpt'.$num.'end'][0])){
+            //on prend le dernier concept
+            $f = $flux['cpt'.$num.'end'][count($flux['cpt'.$num.'end'])-1];
+        }else
+            $f = $flux['cpt'.$num.'end'];
+        //vérifie si la valeur est un calcul
+        if($f['type']=='nombre'){
+            $ext = explode("-",$f['value']);
+            $f['text'].=mt_rand($ext[0], $ext[1]);
+        }else{                
+            if(isset($this->arrFlux['accords'][$f["term_id"]])){
+                //récupère les accords du concept
+                $acc = $this->arrFlux['accords'][$f["term_id"]][0];
+                $f['acc'] = ["vals"=>explode(",",$acc['vals']),"props"=> explode(",",$acc['props'])];
+                //récupère l'élision
+                $kEli = array_search($this->properties["genex"]["hasElision"]->id(), $f['acc']["props"]);
+                $f['elision']=$f['acc']["vals"][$kEli];
+                //récupère le préfix
+                $f['prefix'] = $acc['prefix'] == "0" ? "" : $acc['prefix'];  
+                //récupère le genre
+                $f['genre'] = isset($acc['genre']) ? ($acc["genre"] == "masculin" ? "Mas" : "Fem") : "Mas";  
+            }else $f['text'] .= $f['value'];
+        }
+        $flux['cpt'.$num.'gen']=$f;
+        return $flux;
+    }
+
+
+    function calculPropGenreNombre($flux,$f){
+        /*
+        if($flux['genre'] == "feminin" &&  $flux['pluriel'])$propId=$this->properties["genex"]["accordFemPlu"]->id();
+        if($flux['genre'] == "feminin" &&  !$flux['pluriel'])$propId=$this->properties["genex"]["accordFemSing"]->id();
+        if($flux['genre'] == "masculin" &&  $flux['pluriel'])$propId=$this->properties["genex"]["accordMasPlu"]->id();
+        if($flux['genre'] == "masculin" &&  !$flux['pluriel'])$propId=$this->properties["genex"]["accordMasSing"]->id();
+        */
+        //ATTENTION la priorité est au flux principal pas au flux du concept
+        $flux["genre"] = $flux["genre"] ? $flux["genre"] : $f["genre"];
+        $flux['propGenreNombre'] ="accord";
+        $flux['propGenreNombre'] .= isset($flux['genre']) ? $flux['genre'] : "Mas";                
+        $flux['propGenreNombre'] .= $flux['pluriel'] ? "Plu" : "Sing";
+        return $flux;
+    }
+
+    function calculFluxDeterminant($flux){
+        
         //récupère les valeurs du déterminant suivant les accords
         $detTxt = "";
         foreach ($this->arrFlux['accords'][$flux['det_id']] as $det) {
             $detProps = explode(",",$det['props']);
-            $kEli = array_search(195, $detProps); 
+            $kEli = array_search($this->properties["genex"]["hasElision"]->id(), $detProps); 
             $detVals=explode(",",$det['vals']);
             if($detVals[$kEli] == $flux['elision']){
-                if($flux['genre'] == "feminin" &&  $flux['pluriel'])$propId=504;
-                if($flux['genre'] == "feminin" &&  !$flux['pluriel'])$propId=502;
-                if($flux['genre'] == "masculin" &&  $flux['pluriel'])$propId=505;
-                if($flux['genre'] == "masculin" &&  !$flux['pluriel'])$propId=503;
-                $kProp = array_search($propId, $detProps); 
-                $detTxt = $detVals[$kProp];
+                $key = array_search($this->properties["genex"][$flux['propGenreNombre']]->id(), $detProps); 
+                $flux["detTxt"] = $detVals[$key];
+                $flux["detTxt"] .= $flux['elision']=="0" ? " " : "";
             }
         }
-        //construction du texte
-        $flux['text'] = " ".$detTxt." ".$acc1['prefix'];
-        if($flux['pluriel'])$flux['text'] .= $cpt1Vals[$kPlur];
-
-
-        /*vérifie s'il faut ajouter gérer les vecteurs et les déterminants des niveaux précédents
-        if($niveau > 0){
-            $ordreNiveauBase = $this->ordre-$niveau+1;
-            if(isset($this->arrFlux[$ordreNiveauBase]["vecteur"])){
-                $this->arrFlux[$ordreNiveauBase]["vecteur"]["elision"] = $elision;                    
-                $this->arrFlux[$this->ordre]["vecteur"]["pluriel"] = isset($this->arrFlux[$ordreNiveauBase]["vecteur"]["pluriel"]) ? $this->arrFlux[$ordreNiveauBase]["vecteur"]["pluriel"] : false;    
-                //si le genre est déjà défini par '=1' on le récupère
-                if(isset($this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"]))$this->arrFlux[$this->ordre]["vecteur"]["genre"]=$this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"];
-                else $this->arrFlux[$ordreNiveauBase]["vecteur"]["genre"]=$genre;
-            }
-            if(isset($this->arrFlux[$ordreNiveauBase]["determinant"])){
-                $this->arrFlux[$this->ordre]["determinant"] = $this->arrFlux[$ordreNiveauBase]["determinant"];    
-            }
-            if(isset($this->arrFlux[$ordreNiveauBase]["determinant_verbe"])){
-                $this->arrFlux[$this->ordre]["determinant_verbe"] = $this->arrFlux[$ordreNiveauBase]["determinant_verbe"];    
-                //récupère le premier vecteur précédent
-                for($i = $this->ordre-1; $i >= 0; $i--){
-                    if(isset($this->arrFlux[$i]["vecteur"])){
-                        //transmet le pluriel et le genre
-                        $this->arrFlux[$this->ordre]["vecteur"] = [
-                            "pluriel"=> isset($this->arrFlux[$i]["vecteur"]["pluriel"]) ? $this->arrFlux[$i]["vecteur"]["pluriel"] : 0,
-                            "genre"=> isset($this->arrFlux[$i]["vecteur"]["genre"]) ? $this->arrFlux[$i]["vecteur"]["genre"] : $this->defautGenre,
-                        ];
-                        $i=-1;
-                    }
-                }
-    
-            }
-        }
-        */
-
         return $flux;
 
+    }
+
+    /**
+     * récupère le flux final d'un flux
+     *
+     * @param array     $flux
+     * @param string    $key
+     *
+     */
+	function getFluxEnd($flux,$key){
+        if(isset($flux[$key]) && count($flux[$key])==1)return $flux[$key][0];
+        foreach ($flux[$key] as $f) {
+            if($f[$key])$fluxEnd[] = $this->getFluxEnd($f,$key);
+            elseif ($f['value'] && $f['value']!=' ') $fluxEnd[] = $f;
+        }
+        return $fluxEnd;
     }
 
     /**

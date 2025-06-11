@@ -31,15 +31,20 @@ class GenerateurSql extends AbstractHelper
         5=>['lexinfo:secondPersonForm',1,381,2],        
         6=>['lexinfo:thirdPersonForm',1,352,3]        
     ];
+    /**
+     * @var Acl
+     */
+    protected $acl;
 
     /* plus nécessaire car la base est nettoyée
     var $idsDicosPropres = [4 , 14, 16, 34, 38, 39, 40, 41, 42, 44, 46, 67, 68, 69, 70, 73, 82, 93, 94, 96, 99, 101, 102, 112, 118, 122, 123, 124, 129, 130, 132, 134, 135, 137, 140, 141, 142, 144, 145, 146, 147, 148, 149, 150, 155, 163];
     */
-    public function __construct($api, $cnx, $logger)
+    public function __construct($api, $cnx, $logger, $acl)
     {
         $this->logger = $logger;
         $this->api = $api;
         $this->cnx = $cnx;
+        $this->acl = $acl;
     }
 
     /**
@@ -84,22 +89,34 @@ class GenerateurSql extends AbstractHelper
                 //ATTENTION DANGEREUX : la suppression d'un DICO supprime TOUTES les ressources associées 
                 $result = $this->deleteDico($params['idDico']);
                 break;
+            case 'deleteConcept':
+                //ATTENTION DANGEREUX : la suppression d'un concept supprime TOUTES les ressources associées 
+                $result = $this->deleteResource($params['id']);
+                break;
             case 'getDicoItems':
                 $result = $this->getDicoItems($params);
                 break;
             case 'getConceptTerms':
                 $result = $this->getConceptTerms($params);
                 break;
+            case 'getConjModels':
+                $result = $this->getConjModels($params);
+                break;
         }                      
 
         return $result;
 
-    }
+    }    
 
     function getCnx(){
         return $this->cnx;
     }
 
+    /**
+     * initialise le cache
+     *
+     * @return void
+     */
     function initCache(){
         if(!isset($this->cache)){
             set_time_limit(0);
@@ -132,6 +149,24 @@ class GenerateurSql extends AbstractHelper
             where r.id = ?";
         return $this->cnx->fetchAll($query,[$params['idDico']]);
     }
+
+/**
+     * renvoie la liste des modèles de conjugaison
+     *
+     * @param array    $params paramètre de la requête
+     * @return array
+     */
+    function getConjModels($params){
+        //récupère les générateurs à décomposer avec leurs concepts
+        $query = "SELECT r.id, r.title
+        FROM resource r
+        inner join value vDico on vDico.resource_id = r.id and vDico.property_id = 501
+        inner join value vOeuvre on vOeuvre.value_resource_id = vDico.value_resource_id and vOeuvre.property_id = 501
+        inner join resource rOeuvre on rOeuvre.id = vOeuvre.resource_id and rOeuvre.resource_class_id = 409
+        where r.resource_class_id=110 and rOeuvre.id=?
+        order by r.title";
+        return $this->cnx->fetchAll($query,[$params['idOeu']]);
+    }   
 
     /**
      * renvoie les terms d'un concept
@@ -446,9 +481,9 @@ where r.id = ?";
             }
             if($v['type']!="generateur")$this->getTermAccords($v['term_id']);
             if(strlen($v['det'])>6)$this->getVerbeAccords($rs[$i], $this->cache['idsDico']);
-            //vérifie si le génrateur est un verbe à l'infinitif
+            //vérifie si le génrateur est un verbe simple
             if($v['type']=="generateur" && $v['det']=="" && substr($v['value'],0,2)=="v_"){
-                $rs[$i]['det'] = "09000000";
+                $rs[$i]['det'] = "01000000";//le déterminant est la troisième personne du singulier
                 $this->getVerbeAccords($rs[$i], $this->cache['idsDico']);
             }
 
@@ -595,6 +630,7 @@ r.resource_class_id class,
 vType.value type, 
 vPrefix.value prefix,
 vConj.value_resource_id	idConj,
+vGenre.value genre,
 vAnno.resource_id idAnno,
 group_concat(vAnno.value) vals,
 group_concat(vAnno.property_id) props
@@ -604,6 +640,7 @@ FROM resource r
 	LEFT join value vType ON vType.resource_id = r.id AND vType.property_id = 196
 	LEFT JOIN value vPrefix ON vPrefix.resource_id = r.id AND vPrefix.property_id = 185
 	LEFT JOIN value vConj ON vConj.resource_id = r.id AND vConj.property_id = 193
+	LEFT JOIN value vGenre ON vGenre.resource_id = r.id AND vGenre.property_id = 339
 WHERE r.id = ?
 group by vAnno.resource_id";
             $rs = $this->cnx->fetchAll($query,[$idTerm]);
@@ -686,7 +723,8 @@ group by vAnno.resource_id";
         if(isset($this->cache['codes'][$gen])){
             return $this->cache['codes'][$gen];
         }
-        $query = "SELECT * FROM gen_code WHERE value = ?";
+        //ATTENTION la recherche est case sensistive
+        $query = "SELECT * FROM gen_code WHERE BINARY value = ?";
         $rsCode = $this->cnx->fetchAssoc($query,[$gen]);
         if(!$rsCode) {
             //décompose le générateur
@@ -996,10 +1034,14 @@ group by vAnno.resource_id";
         $rsRes = $this->cnx->fetchAll($query,[$idDico]);
         //récupère les resources uniquement associés à cette resource
         foreach ($rsRes as $r) {
-            $this->deleteResource($idDico);
+            $this->deleteResource($r['id']);
         }
         $this->deleteResource($idDico);
         $this->logger->info('Le dictionnaire '.$idDico.' est supprimée.');
+        return [
+            'message' => "Le dictionnaire ".$idDico." est supprimée.",
+            'status' => 'ok',
+        ];
     }
 
     /**
@@ -1051,9 +1093,21 @@ group by vAnno.resource_id";
         //supprime les ressources de l'oeuvre
         $this->deleteResource($idOeuvre);
         $this->logger->info("L'oeuvre ".$idOeuvre." est supprimée.");
+        return [
+            'message' => "L'oeuvre ".$idOeuvre." est supprimée.",
+            'status' => 'ok',
+        ];
     }
 
     function deleteResource($id){
+
+        $rs = $this->acl->userIsAllowed(null, 'create');
+        if (!$rs) {
+            return [
+                'error' => 'droits insuffisants',
+                'message' => 'Vous n’avez pas le droit d’exécuter cette fonction.',
+            ];
+        }        
         //supprime les resources uniquement associés à cette resource
         $query="SELECT 
                 r.id,
@@ -1083,6 +1137,10 @@ group by vAnno.resource_id";
         $this->cnx->executeQuery($query,[$id,$id,$id,$id]);
 
         $this->logger->info('La ressource '.$id.' est supprimée.');
+        return [
+            'message' => "La ressource ".$id." est supprimée.",
+            'status' => 'ok',
+        ];
     }
 
 }

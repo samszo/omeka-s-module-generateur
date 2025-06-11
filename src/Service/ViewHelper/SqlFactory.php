@@ -13,6 +13,6 @@ class SqlFactory implements FactoryInterface
         $cnx = $services->get('Omeka\Connection');
         $logger = $services->get('Omeka\Logger');
 
-        return new GenerateurSql($api, $cnx, $logger);
+        return new GenerateurSql($api, $cnx, $logger,$services->get('Omeka\Acl'));
     }
 }
