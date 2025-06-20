@@ -102,6 +102,9 @@ class GenerateurSql extends AbstractHelper
             case 'getConjModels':
                 $result = $this->getConjModels($params);
                 break;
+            case 'exportDico':
+                $result = $this->exportDico($params);
+                break;
         }                      
 
         return $result;
@@ -132,20 +135,109 @@ class GenerateurSql extends AbstractHelper
     }   
 
     /**
-     * renvoie les élement d'un dictionnaire
+     * export en csv les élements d'un dictionnaire
+     *
+     * @param array    $params paramètre de la requête
+     * @return array
+     */
+    function exportDico($params){
+        /*ATTENTION :
+        l'ordre des champs est important
+        le nombre de champs est important
+        */
+        $cols = array(['concept','description_concept','type_concept','term','type_term','description_term','generateur','prefix','gender','conjugaison',
+        'ehasElisionlision','accordFemSing','accordFemPlu','accordMasSing','accordMasPlu']);
+        $cpts = $this->getDicoItems($params);
+        foreach ($cpts as $cpt) {
+            $vals = [
+                'concept' => $cpt['title'],
+                'description_concept' => $cpt['description'],
+                'type_concept' => $cpt['type'],
+            ];
+            //récupère les terms associés
+            $terms = $this->getConceptTerms(["idCpt"=>$cpt['id']]);
+            foreach ($terms as $k => $t) {
+                if($k!=0){
+                    $vals = [
+                        'concept' => "",
+                        'description_concept' => "",
+                        'type_concept' => ""
+                    ];
+                }                
+                $vals['term'] = $t['title'];
+                $vals['type_term'] = $t['type'];
+                $vals['description_term'] = $t['description'];
+                $vals['generateur'] = $t['generateur'];
+                $vals['prefix'] = isset($t['prefix']) ? $t['prefix'] : '';
+                $vals['gender'] = isset($t['gender']) ? $t['gender'] : '';
+                $vals['conjugaison'] = isset($t['conj']) ? $t['conj'] : '';
+                if(isset($t['accords'])){
+                    $accords = [];
+                    foreach (explode(",",$t['accords']) as $a) {
+                        $pv = explode(" : ",$a);
+                        $accords[$pv[0]]=$pv[1];
+                    }
+                    $vals['hasElision'] = isset($accords['hasElision']) ? $accords['hasElision'] : '';
+                    $vals['accordFemSing'] = isset($accords['accordFemSing']) ? $accords['accordFemSing'] : '';
+                    $vals['accordFemPlu'] = isset($accords['accordFemPlu']) ? $accords['accordFemPlu'] : '';
+                    $vals['accordMasSing'] = isset($accords['accordMasSing']) ? $accords['accordMasSing'] : '';
+                    $vals['accordMasPlu'] = isset($accords['accordMasPlu']) ? $accords['accordMasPlu'] : '';
+                }else{
+                    $vals['hasElision'] = '';
+                    $vals['accordFemSing'] = '';
+                    $vals['accordFemPlu'] = '';
+                    $vals['accordMasSing'] = '';
+                    $vals['accordMasPlu'] = '';
+                }
+                $cols[] = $vals;
+            }
+            if(count($terms)==0){
+                $vals['term'] = $t['title'];
+                $vals['type_term'] = $t['type'];
+                $vals['description_term'] = $t['description'];
+                $vals['generateur'] = $t['generateur'];
+                $vals['prefix'] = isset($t['prefix']) ? $t['prefix'] : '';
+                $vals['gender'] = isset($t['gender']) ? $t['gender'] : '';
+                $vals['conjugaison'] = isset($t['conj']) ? $t['conj'] : '';
+                $vals['hasElision'] = '';
+                $vals['accordFemSing'] = '';
+                $vals['accordFemPlu'] = '';
+                $vals['accordMasSing'] = '';
+                $vals['accordMasPlu'] = '';
+                $cols[] = $vals;
+            }
+        };        
+        return $this->array2csv($cols);
+    }
+
+    function array2csv($data, $delimiter = ',', $enclosure = '"', $escape_char = "\\")
+    {
+        $f = fopen('php://memory', 'r+');
+        $first = true;
+        foreach ($data as $item) {
+            if(!$first)$item=array_values($item);            
+            fputcsv($f, $item, $delimiter, $enclosure, $escape_char);
+        }
+        rewind($f);
+        return stream_get_contents($f);
+    }
+
+    /**
+     * renvoie les élements d'un dictionnaire
      *
      * @param array    $params paramètre de la requête
      * @return array
      */
     function getDicoItems($params){
         //récupère les générateurs à décomposer avec leurs concepts
-        $query = "select rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
-                rcLR.local_name, vLRt.value type
+        $query = "SELECT rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
+                rcLR.local_name, vLRt.value type, vLRdesc.value description
             from resource r
             inner join value vLR on vLR.value_resource_id = r.id
             inner join resource rLR on rLR.id = vLR.resource_id
             inner join resource_class rcLR on rcLR.id = rLR.resource_class_id
             inner join value vLRt on vLRt.resource_id = rLR.id AND vLRt.property_id = 196
+            left join value vLRdesc on vLRdesc.resource_id = rLR.id AND vLRdesc.property_id = 4
             where r.id = ?";
         return $this->cnx->fetchAll($query,[$params['idDico']]);
     }
@@ -176,8 +268,8 @@ class GenerateurSql extends AbstractHelper
      */
     function getConceptTerms($params){
         //récupère les générateurs à décomposer avec leurs concepts
-        $query = "select rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
-                rcLR.local_name, vLRt.value type
+        $query = "SELECT rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
+                rcLR.local_name, vLRt.value type, vDesc.value description
                 , vPrefix.value prefix
                 , vGender.value gender
                 , vConj.value conj
@@ -196,6 +288,7 @@ left join value vConj on vConj.resource_id = rLR.id AND vConj.property_id = 193
 left join value vEli on vEli.resource_id = rLR.id AND vEli.property_id = 195
 left join value vGen on vGen.resource_id = rLR.id AND vGen.property_id = 187
 left join value vAnnoId on vAnnoId.resource_id = rLR.id AND vAnnoId.property_id = 506
+left join value vDesc on vDesc.resource_id = rLR.id AND vDesc.property_id = 4
 left join (SELECT 
     GROUP_CONCAT(CONCAT(p.local_name,' : ',v.value)) accords,
     v.resource_id
