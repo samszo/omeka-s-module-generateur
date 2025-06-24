@@ -83,7 +83,7 @@ class GenerateurSql extends AbstractHelper
                 break;                                                                                  
             case 'deleteOeuvre':
                 //ATTENTION DANGEREUX : la suppression d'une oeuvre supprime TOUTES les ressources associées 
-                $result = $this->deleteOeuvre($params['idOeuvre']);
+                $result = $this->deleteOeuvre($params['idOeu']);
                 break;
             case 'deleteDico':
                 //ATTENTION DANGEREUX : la suppression d'un DICO supprime TOUTES les ressources associées 
@@ -105,11 +105,35 @@ class GenerateurSql extends AbstractHelper
             case 'exportDico':
                 $result = $this->exportDico($params);
                 break;
+            case 'exportCpt':
+                $result = $this->exportCpt($params);
+                break;
+            case 'getOeuvreUses':
+                $result = $this->getOeuvreUses($params);
+                break;
         }                      
 
         return $result;
 
     }    
+
+    function getOeuvreUses($params){
+        $query = "SELECT
+            count(distinct vHasDico.value_resource_id) nbDico,
+            group_concat(distinct vHasDico.value_resource_id) idsDico
+            , count(distinct vTerm.resource_id) nbItem
+            , rTerm.resource_class_id
+            , cTerm.label class
+            from resource r
+            inner join value vHasDico on vHasDico.resource_id = r.id and vHasDico.property_id = 501
+            inner join value vDicoNonGen on vDicoNonGen.resource_id = vHasDico.value_resource_id and vDicoNonGen.property_id = 196 and vDicoNonGen.value != 'général'
+            inner join value vTerm on vTerm.value_resource_id = vDicoNonGen.resource_id and vTerm.property_id = 501
+            inner join resource rTerm on rTerm.id = vTerm.resource_id
+            inner join resource_class cTerm on cTerm.id = rTerm.resource_class_id
+            where r.id = ?
+            group by rTerm.resource_class_id";
+        return $this->cnx->fetchAll($query,[$params['idOeu']]);
+    }   
 
     function getCnx(){
         return $this->cnx;
@@ -206,8 +230,83 @@ class GenerateurSql extends AbstractHelper
                 $vals['accordMasPlu'] = '';
                 $cols[] = $vals;
             }
-        };        
-        return $this->array2csv($cols);
+        };
+        $dico = $this->api->read("items",$params['idDico'])->getContent();        
+        return ['fileName'=>'exportDico-'.$dico->displayTitle().".csv",'csv'=>$this->array2csv($cols)];
+    }
+
+    /**
+     * export en csv les élements d'un concept
+     *
+     * @param array    $params paramètre de la requête
+     * @return array
+     */
+    function exportCpt($params){
+        /*ATTENTION :
+        l'ordre des champs est important
+        le nombre de champs est important
+        */
+        $cols = array(['concept','description_concept','type_concept','term','type_term','description_term','generateur','prefix','gender','conjugaison',
+        'ehasElisionlision','accordFemSing','accordFemPlu','accordMasSing','accordMasPlu']);
+        $cpt = $this->api->read("items",$params["idCpt"])->getContent();
+        $vals = [
+            'concept' => $cpt->displayTitle(),
+            'description_concept' => $cpt->value('dcterms:description')->__toString(),
+            'type_concept' => $cpt->value('genex:hasType')->__toString()
+        ];
+        //récupère les terms associés
+        $terms = $this->getConceptTerms(["idCpt"=>$params["idCpt"]]);
+        foreach ($terms as $k => $t) {
+            if($k!=0){
+                $vals = [
+                    'concept' => "",
+                    'description_concept' => "",
+                    'type_concept' => ""
+                ];
+            }                
+            $vals['term'] = $t['title'];
+            $vals['type_term'] = $t['type'];
+            $vals['description_term'] = $t['description'];
+            $vals['generateur'] = $t['generateur'];
+            $vals['prefix'] = isset($t['prefix']) ? $t['prefix'] : '';
+            $vals['gender'] = isset($t['gender']) ? $t['gender'] : '';
+            $vals['conjugaison'] = isset($t['conj']) ? $t['conj'] : '';
+            if(isset($t['accords'])){
+                $accords = [];
+                foreach (explode(",",$t['accords']) as $a) {
+                    $pv = explode(" : ",$a);
+                    $accords[$pv[0]]=$pv[1];
+                }
+                $vals['hasElision'] = isset($accords['hasElision']) ? $accords['hasElision'] : '';
+                $vals['accordFemSing'] = isset($accords['accordFemSing']) ? $accords['accordFemSing'] : '';
+                $vals['accordFemPlu'] = isset($accords['accordFemPlu']) ? $accords['accordFemPlu'] : '';
+                $vals['accordMasSing'] = isset($accords['accordMasSing']) ? $accords['accordMasSing'] : '';
+                $vals['accordMasPlu'] = isset($accords['accordMasPlu']) ? $accords['accordMasPlu'] : '';
+            }else{
+                $vals['hasElision'] = '';
+                $vals['accordFemSing'] = '';
+                $vals['accordFemPlu'] = '';
+                $vals['accordMasSing'] = '';
+                $vals['accordMasPlu'] = '';
+            }
+            $cols[] = $vals;
+        }
+        if(count($terms)==0){
+            $vals['term'] = $t['title'];
+            $vals['type_term'] = $t['type'];
+            $vals['description_term'] = $t['description'];
+            $vals['generateur'] = $t['generateur'];
+            $vals['prefix'] = isset($t['prefix']) ? $t['prefix'] : '';
+            $vals['gender'] = isset($t['gender']) ? $t['gender'] : '';
+            $vals['conjugaison'] = isset($t['conj']) ? $t['conj'] : '';
+            $vals['hasElision'] = '';
+            $vals['accordFemSing'] = '';
+            $vals['accordFemPlu'] = '';
+            $vals['accordMasSing'] = '';
+            $vals['accordMasPlu'] = '';
+            $cols[] = $vals;
+        }
+        return ['fileName'=>'exportConcept-'.$cpt->displayTitle().".csv",'csv'=>$this->array2csv($cols)];
     }
 
     function array2csv($data, $delimiter = ',', $enclosure = '"', $escape_char = "\\")
@@ -1110,6 +1209,17 @@ group by vAnno.resource_id";
      * @return array
      */
     function deleteDico($idDico){
+        $rs = $this->acl->userIsAllowed(null, 'create');
+        if (!$rs) {
+            $item = $this->api->read('items', $idDico)->getContent();
+            return [
+                'error' => 'droits insuffisants',
+                'message' => "Vous n’avez pas le droit d’exécuter cette fonction.",
+                'link' => $item->adminUrl('edit')
+            ];
+        }        
+
+
         set_time_limit(0);
         $rs=[];
         //récupère les resources uniquement associées à ce dico
@@ -1144,22 +1254,33 @@ group by vAnno.resource_id";
      * @return array
      */
     function deleteOeuvre($idOeuvre){
+        $rs = $this->acl->userIsAllowed(null, 'create');
+        if (!$rs) {
+            $item = $this->api->read('items', $idOeuvre)->getContent();
+            return [
+                'error' => 'droits insuffisants',
+                'message' => "Vous n’avez pas le droit d’exécuter cette fonction.",
+                'link' => $item->adminUrl('edit')
+            ];
+        }        
+
         set_time_limit(0);
         $rs=[];
         //récupère les dictionnaires uniquement associés à l'oeuvre
+        //on ne supprime pas les dictionnaires généraux
         $query="SELECT 
             vOeuvreDicos.value_resource_id idDico,
             GROUP_CONCAT(DISTINCT r.id) idsOeuvre,
-            COUNT(DISTINCT r.id) nb
+            COUNT(DISTINCT r.id) nb,
+            vDicoType.value type
         FROM
             resource r
-                INNER JOIN
-            value vOeuvreDicos ON vOeuvreDicos.resource_id = r.id
-                AND vOeuvreDicos.property_id = 501
+                INNER JOIN value vOeuvreDicos ON vOeuvreDicos.resource_id = r.id AND vOeuvreDicos.property_id = 501
+                INNER JOIN value vDicoType ON vDicoType.resource_id = vOeuvreDicos.value_resource_id AND vDicoType.property_id = 196
         WHERE
             r.resource_class_id = 409
         GROUP BY vOeuvreDicos.value_resource_id
-        HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1";
+        HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1 AND vDicoType.value != 'général'";
         $rsDico = $this->cnx->fetchAll($query,[$idOeuvre]);
         foreach ($rsDico as $i => $d) {
             //récupère les resources uniquement associées à ce dico
@@ -1196,9 +1317,11 @@ group by vAnno.resource_id";
 
         $rs = $this->acl->userIsAllowed(null, 'create');
         if (!$rs) {
+            $item = $this->api->read('items', $id)->getContent();
             return [
                 'error' => 'droits insuffisants',
-                'message' => 'Vous n’avez pas le droit d’exécuter cette fonction.',
+                'message' => "Vous n’avez pas le droit d’exécuter cette fonction.",
+                'link' => $item->adminUrl('edit')
             ];
         }        
         //supprime les resources uniquement associés à cette resource
@@ -1409,3 +1532,13 @@ WHERE
         155,
         163)
     */
+
+
+    /*Vérification des terms sans dico
+    SELECT count(*) nb, 
+vHasDico.value_resource_id, rDico.title	
+from resource r
+inner join value vHasDico on vHasDico.resource_id = r.id and vHasDico.property_id = 501
+inner join resource rDico on rDico.id = vHasDico.value_resource_id 
+group by vHasDico.value_resource_id
+*/
