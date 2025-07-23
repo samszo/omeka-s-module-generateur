@@ -126,7 +126,7 @@ class GenerateurSql extends AbstractHelper
             , cTerm.label class
             from resource r
             inner join value vHasDico on vHasDico.resource_id = r.id and vHasDico.property_id = 501
-            inner join value vDicoNonGen on vDicoNonGen.resource_id = vHasDico.value_resource_id and vDicoNonGen.property_id = 196 and vDicoNonGen.value != 'général'
+            inner join value vDicoNonGen on vDicoNonGen.resource_id = vHasDico.value_resource_id and vDicoNonGen.property_id = 508 and vDicoNonGen.value = 'non'
             inner join value vTerm on vTerm.value_resource_id = vDicoNonGen.resource_id and vTerm.property_id = 501
             inner join resource rTerm on rTerm.id = vTerm.resource_id
             inner join resource_class cTerm on cTerm.id = rTerm.resource_class_id
@@ -1277,10 +1277,11 @@ group by vAnno.resource_id";
             resource r
                 INNER JOIN value vOeuvreDicos ON vOeuvreDicos.resource_id = r.id AND vOeuvreDicos.property_id = 501
                 INNER JOIN value vDicoType ON vDicoType.resource_id = vOeuvreDicos.value_resource_id AND vDicoType.property_id = 196
+                INNER JOIN value vDicoNonGen on vDicoNonGen.resource_id = vOeuvreDicos.value_resource_id and vDicoNonGen.property_id = 508 and vDicoNonGen.value = 'non'
         WHERE
             r.resource_class_id = 409
         GROUP BY vOeuvreDicos.value_resource_id
-        HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1 AND vDicoType.value != 'général'";
+        HAVING GROUP_CONCAT(DISTINCT r.id) = ? AND nb = 1 ";
         $rsDico = $this->cnx->fetchAll($query,[$idOeuvre]);
         foreach ($rsDico as $i => $d) {
             //récupère les resources uniquement associées à ce dico
