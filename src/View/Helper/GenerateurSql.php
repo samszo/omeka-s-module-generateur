@@ -219,7 +219,7 @@ class GenerateurSql extends AbstractHelper
                 $vals['term'] = $t['title'];
                 $vals['type_term'] = $t['type'];
                 $vals['description_term'] = $t['description'];
-                $vals['generateur'] = $t['generateur'];
+                $vals['generateur'] = $t['gen'];
                 $vals['prefix'] = isset($t['prefix']) ? $t['prefix'] : '';
                 $vals['gender'] = isset($t['gender']) ? $t['gender'] : '';
                 $vals['conjugaison'] = isset($t['conj']) ? $t['conj'] : '';

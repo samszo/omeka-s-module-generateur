@@ -192,3 +192,7 @@ genex:hasAccord a rdf:Property ;
 genex:hasTraduction a rdf:Property ;
     rdfs:label "A comme traduction"@fr ;
     rdfs:comment "Utiliser pour définir les traductions d'un concept dans différentes langues."@fr .        
+
+genex:isGeneral a rdf:Property ;
+    rdfs:label "Est général"@fr ;
+    rdfs:comment "Utiliser pour définir si un dictionnaire est général."@fr .        
