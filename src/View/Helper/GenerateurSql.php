@@ -329,8 +329,8 @@ class GenerateurSql extends AbstractHelper
      */
     function getDicoItems($params){
         //récupère les générateurs à décomposer avec leurs concepts
-        $query = "SELECT rLR.id, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
-                rcLR.local_name, vLRt.value type, vLRdesc.value description
+        $query = "SELECT rLR.id, vLRt.value type, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
+                rcLR.local_name, vLRdesc.value description
             from resource r
             inner join value vLR on vLR.value_resource_id = r.id
             inner join resource rLR on rLR.id = vLR.resource_id
@@ -418,7 +418,7 @@ where r.id = ?";
             $params
         );
         //création du moteur
-        $this->moteur = new Moteur(false,$this->api,$this->logger);
+        if(!isset($this->moteur))$this->moteur = new Moteur(false,$this->api,$this->logger);
 
         //récupère les générateurs à décomposer avec leurs concepts
         $query = "SELECT 
@@ -686,10 +686,10 @@ where r.id = ?";
             //
         }
         if($params['niv']==1){
-            $rs['accords']=array_filter($this->cache['accords'], function($value) {
+            $accords=array_filter($this->cache['accords'], function($value) {
                 return $value['type'] !== "generateur";
             });
-            $rs['elapsed_time'] = $this->getDuree($deb,microtime(true));
+            return ["flux"=>$rs, "accords"=>$accords, "elapsed_time" => $this->getDuree($deb,microtime(true))];
         }
         return $rs;
     }
@@ -918,7 +918,7 @@ group by vAnno.resource_id";
         //ATTENTION la recherche est case sensistive
         $query = "SELECT * FROM gen_code WHERE BINARY value = ?";
         $rsCode = $this->cnx->fetchAssoc($query,[$gen]);
-        if(!$rsCode) {
+        if(!$rsCode){ //si le code n'existe pas
             //décompose le générateur
             $compo = $this->moteur->explodeCode($gen);
             //ajoute le code du générateur                        
@@ -926,6 +926,13 @@ group by vAnno.resource_id";
                 VALUES (?, ?, ?, ?, ?)";
             $this->cnx->executeQuery($insert,[$gen,$compo['syn'],$compo['det'],$compo['cpt1'],$compo['cpt2']]);
             $this->cache['codes'][$gen]=$this->cnx->fetchAssoc("SELECT * FROM gen_code WHERE id=".$this->cnx->lastInsertId());
+        }elseif (!isset($rsCode['cpt1'])) {//ou s'il n'a pas de cpt1
+            //décompose le générateur
+            $compo = $this->moteur->explodeCode($gen);
+            //ajoute le code du générateur                        
+            $update = "UPDATE gen_code SET cpt1 = ?, cpt2= ? WHERE id = ?";
+            $this->cnx->executeQuery($update,[$compo['cpt1'],$compo['cpt2'],$rsCode['id']]);
+            $this->cache['codes'][$gen]=$this->cnx->fetchAssoc("SELECT * FROM gen_code WHERE id=".$rsCode['cpt1']);
         }else{
             $this->cache['codes'][$gen]=$rsCode;
         }

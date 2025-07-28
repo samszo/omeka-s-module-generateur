@@ -143,6 +143,7 @@ class Moteur {
      * variable de generation
      */
     var $arrFlux = array();
+    var $accords = array();
     var $ordre = 0;
     var $segment = 0;
     var $niv=0;
@@ -212,11 +213,20 @@ class Moteur {
      */
     public function genereConcept($params)
     {
-        $this->arrFlux = $this->data = $this->sql->__invoke([
+        $deb = microtime(true);
+        if(isset($params["explode"])){
+            $this->data = $this->sql->__invoke([
+                'idConcept'=>$params["idConcept"],
+                'idTerm'=>$params["idTerm"],
+                'action'=>'explodeConcept']);
+        }
+        $this->data = $this->sql->__invoke([
             'idConcept'=>$params["idConcept"],
             'idTerm'=>$params["idTerm"],
             'action'=>'getRandomFlux']);
-
+        if($this->data['error'])return $this->data;
+        $this->arrFlux = $this->data['flux'];    
+        $this->accords = $this->data['accords'];    
         $this->texte = "";
 		$txtCondi = true;
 		$imbCondi= false;		
@@ -238,9 +248,19 @@ class Moteur {
 		//mise en forme du texte
 		$this->coupures();
 
-        return $params['structure'] ? ['strct'=>$this->arrFlux,'texte'=>$this->texte] : $this->texte;
+        return $params['structure'] ? [
+            'strct'=>["flux"=>$this->arrFlux, "accords"=>$this->accords
+            ,"times"=>["random"=>$this->data['elapsed_time'],"genere"=>$this->getDuree($deb,microtime(true))]
+            ]
+            ,'texte'=>$this->texte] : $this->texte;
     }
 
+    function getDuree($debut,$fin){
+        $elapsed = $fin - $debut;
+        $minutes = floor($elapsed / 60);
+        $seconds = $elapsed % 60;
+        return sprintf('%d minutes and %.2f seconds', $minutes, $seconds);
+    }
 
     /**
      * calcul les accords d'un flux
@@ -254,7 +274,7 @@ class Moteur {
 
         //vérifie si on gère un syntagme
         if($flux["syn_id"]){
-            $syn = $this->arrFlux['accords']['syn'.$flux["syn_id"]];
+            $syn = $this->accords['syn'.$flux["syn_id"]];
             $flux['text'] = $syn['lib'];
             return $flux;
         }
@@ -268,7 +288,28 @@ class Moteur {
         //vérifie si le déterminant est pour un verbe
         if(strlen($flux["det"]) > 6) return $this->getFluxVerbe($flux);
 
-        return $this->getFluxAccord($flux,$num);
+        //calcul des flux des générateurs
+        if(isset($flux["cpt1_flux"])){
+            //récupère la composition finale du flux
+            $flux['cpt1end'] = $this->getFluxEnd($flux,"cpt1_flux");
+            $flux['cpt2end'] = $this->getFluxEnd($flux,"cpt2_flux");
+            foreach ($flux['cpt1end'] as $n=>$f) {
+                $fluxGen = ['cpt1'=>$f];
+                //ajoute l'identifiant du déterminant
+                if(!isset($f['det_id']) && isset($flux['det_id'])){
+                    $fluxGen['det_id'] = $flux['det_id'];
+                    $fluxGen['det'] = $flux["det"];
+                }
+                //ajoute l'identifiant du concept 2
+                if(!isset($f['cpt2']) && isset($flux['cpt2'][$n])){
+                    $fluxGen['cpt2'] = $flux['cpt2'][$n];
+                }
+                $flux['cpt1gen'.$n] = $this->getFluxAccord($fluxGen,$num+$n);            
+                $flux['text'] .= $flux['cpt1gen'.$n]['text'];
+            }
+        }else $flux = $this->getFluxAccord($flux,$num);
+
+        return $flux;
 
     }
 
@@ -282,10 +323,6 @@ class Moteur {
 	function getFluxAccord($flux, $num){
 
         $flux['text'] = "";
-
-        //récupère la composition finale du flux
-        $flux['cpt1end'] = $this->getFluxEnd($flux,"cpt1_flux");
-        $flux['cpt2end'] = $this->getFluxEnd($flux,"cpt2_flux");
         
         //vérifie s'il faut chercher le pluriel
         $flux['pluriel'] = isset($flux["det"]) && intval($flux["det"]) >= 50 ? true : false;
@@ -304,7 +341,7 @@ class Moteur {
         }
 
         if(isset($flux['det_id'])){
-            if(isset($flux['cpt1end']) && isset($flux['cpt2end'])){
+            if(isset($flux['cpt1']) && isset($flux['cpt2'])){
                 //forme déterminant+adjectif+substantif = [66|a_ancien@argot_étudiant] => det_id, cpt1_flux, cpt2_flux
                 //det_id donne le pluriel
                 //cpt2_flux donne le genre       
@@ -327,7 +364,7 @@ class Moteur {
                     .($keyCpt2 ? $flux['cpt2gen']['acc']['vals'][$keyCpt2] : "");      
                 return $flux;
             }
-            if(isset($flux['cpt1end']) && !isset($flux['cpt2nd'])){
+            if(isset($flux['cpt1']) && !isset($flux['cpt2'])){
                 //forme déterminant+substantif = [66|argot_étudiant] => det_id, cpt1_flux
                 //det_id donne le pluriel
                 //cpt1_flux donne le genre et s'accorde avec det_1       
@@ -350,8 +387,9 @@ class Moteur {
             //cpt1_flux s'accorde au singulier
             $flux = $this->calculFluxConcept($flux, 1);
             $flux = $this->calculPropGenreNombre($flux,$flux['cpt1gen']);
-            if(isset($flux['cpt1gen']["text"]))return $flux;
-            else{
+            if(isset($flux['cpt1gen']["text"]) && $flux['cpt1gen']["text"]!=""){
+                $flux['text'] .= $flux['cpt1gen']["text"];
+            }else{
                 $keyCpt1 = array_search($this->properties["genex"][$flux['propGenreNombre']]->id(), $flux['cpt1gen']['acc']['props']);
                 $flux['text'] .= $flux['cpt1gen']['prefix']
                     .($keyCpt1 && isset($flux['cpt1gen']['acc']['vals'][$keyCpt1]) ?$flux['cpt1gen']['acc']['vals'][$keyCpt1]: "");
@@ -370,19 +408,21 @@ class Moteur {
      */
     function calculFluxConcept($flux, $num){
         //vérifie si le flux est un tableau de concept
-        if(isset($flux['cpt'.$num.'end'][0])){
+        if(isset($flux['cpt'.$num]) && is_array($flux['cpt'.$num]) ){
             //on prend le dernier concept
-            $f = $flux['cpt'.$num.'end'][count($flux['cpt'.$num.'end'])-1];
+            $f = $flux['cpt'.$num];
         }else
-            $f = $flux['cpt'.$num.'end'];
+            $f = $flux;
         //vérifie si la valeur est un calcul
         if($f['type']=='nombre'){
-            $ext = explode("-",$f['value']);
-            $f['text'].=mt_rand($ext[0], $ext[1]);
+            //récupère les accords du concept
+            $acc = $this->accords[$f["term_id"]][0];
+            $ext = explode("->",$acc['prefix']);
+            $f['text'].=mt_rand(intval($ext[0]), intval($ext[1]));
         }else{                
-            if(isset($this->arrFlux['accords'][$f["term_id"]])){
+            if(isset($this->accords[$f["term_id"]])){
                 //récupère les accords du concept
-                $acc = $this->arrFlux['accords'][$f["term_id"]][0];
+                $acc = $this->accords[$f["term_id"]][0];
                 $f['acc'] = ["vals"=>explode(",",$acc['vals']),"props"=> explode(",",$acc['props'])];
                 //récupère l'élision
                 $kEli = array_search($this->properties["genex"]["hasElision"]->id(), $f['acc']["props"]);
@@ -417,7 +457,7 @@ class Moteur {
         
         //récupère les valeurs du déterminant suivant les accords
         $detTxt = "";
-        foreach ($this->arrFlux['accords'][$flux['det_id']] as $det) {
+        foreach ($this->accords[$flux['det_id']] as $det) {
             $detProps = explode(",",$det['props']);
             $kEli = array_search($this->properties["genex"]["hasElision"]->id(), $detProps); 
             $detVals=explode(",",$det['vals']);
@@ -436,13 +476,14 @@ class Moteur {
      *
      * @param array     $flux
      * @param string    $key
+     * @param int       $niv
      *
      */
-	function getFluxEnd($flux,$key){
-        if(isset($flux[$key]) && count($flux[$key])==1)return $flux[$key][0];
+	function getFluxEnd($flux,$key,$niv=0){
+        if(isset($flux[$key]) && count($flux[$key])==1) return $niv ? $flux[$key][0] : [$flux[$key][0]];
         foreach ($flux[$key] as $f) {
-            if($f[$key])$fluxEnd[] = $this->getFluxEnd($f,$key);
-            elseif ($f['value'] && $f['value']!=' ') $fluxEnd[] = $f;
+            if($f[$key])$fluxEnd[] = $this->getFluxEnd($f,$key,$niv+1);
+            elseif ($f['value'] && $f['value']!='') $fluxEnd[] = $f;
         }
         return $fluxEnd;
     }
@@ -470,10 +511,10 @@ class Moteur {
 				
 		//récupère les pronoms
         $kDet = "detVerbe".$flux["det"][2].$flux["det"][3].$flux["det"][4].$flux["det"][6];
-        $pronomVerbe = $this->arrFlux['accords'][$kDet];
+        $pronomVerbe = $this->accords[$kDet];
         
 		//récupère les accords du verbe
-        $accVerbe = $this->arrFlux['accords'][$flux['cpt1_flux'][0]['term_id']][0];
+        $accVerbe = $this->accords[$flux['cpt1_flux'][0]['term_id']][0];
 		
 		
         //construction du centre
@@ -2651,6 +2692,7 @@ class Moteur {
                 $genCompo['syn'] = $gen; 
             }else{
                 $genCompo['class']=$arrGen[0];
+                $genCompo['cpt1']=$arrGen[0];        
             }
             return $genCompo;
         }else{
