@@ -111,11 +111,80 @@ class GenerateurSql extends AbstractHelper
             case 'getOeuvreUses':
                 $result = $this->getOeuvreUses($params);
                 break;
+            case 'getConceptSuggest':
+                $result = $this->getConceptSuggest($params['idOeu'],$params['query']);
+                break;
         }                      
 
         return $result;
 
     }    
+
+    /**
+     * renvoie des suggestions le titre des concepts pour une oeuvre
+     *
+     * @param   int     $idOeu   identifiant de l'oeuvre
+     * @param   string  $query   requête de recherche
+     * 
+     * @return array
+     */
+    function getConceptSuggest($idOeu, $query){
+
+        $rsDicos = $this->getDicosOeuvres($idOeu);
+        $dicos = array_map(fn($r): int => $r["idDico"], $rsDicos);
+        //recherche des concepts dans les dictionnaires de l'oeuvre
+        $sql = "SELECT r.id, r.title, c.label
+            from resource r
+            inner join resource_class c on c.id = r.resource_class_id
+            inner join value vDico on vDico.resource_id = r.id and vDico.property_id = 501 and vDico.value_resource_id IN (".implode(",",$dicos).")
+            where r.title LIKE '%".$query."%' AND c.label = 'Concept'
+            order by r.title"; 
+        $rs1 = $this->cnx->fetchAll($sql);
+        //recherche des syntagmes dans les dictionnaires de l'oeuvre
+        $sql = "SELECT 
+                r.id, r.title, vId.value idSyn, c.label
+            FROM
+                resource r
+                    INNER JOIN resource_class c ON c.id = r.resource_class_id
+                    INNER JOIN value vDico ON vDico.resource_id = r.id
+                    AND vDico.property_id = 501
+                    AND vDico.value_resource_id IN (".implode(",",$dicos).")
+                    INNER JOIN value vId ON vId.resource_id = r.id AND vId.property_id = 10
+            WHERE r.title LIKE '%".$query."%' AND c.label = 'Syntagme'
+            ORDER BY r.title"; 
+        $rs2 = $this->cnx->fetchAll($sql);
+        $rs1 = array_merge($rs1, $rs2);
+
+        //recherche des déterminants dans les dictionnaires de l'oeuvre
+        $sql = "SELECT 
+                r.id, c.label, vId.value idDet
+                , GROUP_CONCAT(DISTINCT vAccLib.value) title
+            FROM
+                resource r
+                    INNER JOIN resource_class c ON c.id = r.resource_class_id AND c.label = 'Déterminant'
+                    INNER JOIN value vDico ON vDico.resource_id = r.id
+                    AND vDico.property_id = 501
+                    AND vDico.value_resource_id IN (".implode(",",$dicos).")
+                    INNER JOIN value vAcc ON vAcc.resource_id = r.id AND vAcc.property_id = 506
+                    INNER JOIN value vId ON vId.resource_id = r.id AND vId.property_id = 10
+                    INNER JOIN value vAccLibFilter ON vAccLibFilter.resource_id = vAcc.value_annotation_id 
+						AND vAccLibFilter.property_id IN (502, 503, 504, 505)
+                        AND vAccLibFilter.value LIKE '%".$query."%'
+                    INNER JOIN value vAccLib ON vAccLib.resource_id = vAccLibFilter.resource_id 
+						AND vAccLib.property_id IN (502, 503, 504, 505)
+            GROUP BY r.id
+            ORDER BY title";
+        $rs2 = $this->cnx->fetchAll($sql);
+        
+        //fusionne les résultats
+        $rs1 = array_merge($rs1, $rs2);
+
+        usort($rs1, function($a, $b) {
+            return strcmp($a['title'], $b['title']);
+        });
+
+        return $rs1;
+    }   
 
     function getOeuvreUses($params){
         $query = "SELECT
@@ -169,8 +238,8 @@ class GenerateurSql extends AbstractHelper
         l'ordre des champs est important
         le nombre de champs est important
         */
-        $cols = array(['concept','description_concept','type_concept','term','type_term','description_term','generateur','prefix','gender','conjugaison',
-        'ehasElisionlision','accordFemSing','accordFemPlu','accordMasSing','accordMasPlu']);
+        $cols = array(['concept','description_concept','type_concept','term','type_term','description_term','generateur','prefix','gender','hasConjugaison',
+        'elision','fem_sin','fem_plu','mas_sin','mas_plu']);
         $cpts = $this->getDicoItems($params);
         foreach ($cpts as $cpt) {
             $vals = [
@@ -191,7 +260,7 @@ class GenerateurSql extends AbstractHelper
                 $vals['term'] = $t['title'];
                 $vals['type_term'] = $t['type'];
                 $vals['description_term'] = $t['description'];
-                $vals['generateur'] = $t['generateur'];
+                $vals['generateur'] = $t['gen'];
                 $vals['prefix'] = isset($t['prefix']) ? $t['prefix'] : '';
                 $vals['gender'] = isset($t['gender']) ? $t['gender'] : '';
                 $vals['conjugaison'] = isset($t['conj']) ? $t['conj'] : '';
@@ -328,20 +397,106 @@ class GenerateurSql extends AbstractHelper
      * @return array
      */
     function getDicoItems($params){
-        //récupère les générateurs à décomposer avec leurs concepts
-        $query = "SELECT rLR.id, vLRt.value type, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
-                rcLR.local_name, vLRdesc.value description
-            from resource r
-            inner join value vLR on vLR.value_resource_id = r.id
-            inner join resource rLR on rLR.id = vLR.resource_id
-            inner join resource_class rcLR on rcLR.id = rLR.resource_class_id
-            inner join value vLRt on vLRt.resource_id = rLR.id AND vLRt.property_id = 196
-            left join value vLRdesc on vLRdesc.resource_id = rLR.id AND vLRdesc.property_id = 4
-            where r.id = ?";
+        /*pour récupérer les accors d'une classe de ressources
+        SELECT
+            vAnno.value anno,
+            vAcc.value,
+            vAcc.property_id propId,
+            p.label
+            FROM resource r
+            INNER JOIN value vId ON vId.resource_id = r.id AND vId.property_id = 10 
+            INNER JOIN value vAnno ON vAnno.resource_id = r.id AND vAnno.property_id = 506
+            INNER JOIN value vAcc ON vAcc.resource_id = vAnno.value_annotation_id
+            INNER JOIN property p ON p.id = vAcc.property_id
+            WHERE r.resource_class_id = 113
+            GROUP BY anno, propId
+        */
+
+        switch ($params['type']) {
+            case 'pronoms':
+                $query = "SELECT 
+                    r.id id_pronom,
+                    vNum.value num,
+                    vTitle.value lib,
+                    vEli.value elision,
+                    vType.value type
+                FROM resource r
+                    inner join value vDico on vDico.resource_id = r.id AND vDico.property_id = 501
+                    inner join value vTitle on vTitle.resource_id = r.id AND vTitle.property_id = 1
+                    inner join value vNum on vNum.resource_id = r.id AND vNum.property_id = 10
+                    left join value vEli on vEli.resource_id = r.id AND vEli.property_id = 195
+                    inner join value vType on vType.resource_id = r.id AND vType.property_id = 8
+                WHERE vDico.value_resource_id = ?";
+                break;
+            case 'négations':
+                $query = "SELECT 
+                    r.id id_neg,
+                    vNum.value num,
+                    vTitle.value lib
+                    FROM resource r
+                    inner join value vDico on vDico.resource_id = r.id AND vDico.property_id = 501
+                    inner join value vTitle on vTitle.resource_id = r.id AND vTitle.property_id = 1
+                    inner join value vNum on vNum.resource_id = r.id AND vNum.property_id = 10
+                    WHERE vDico.value_resource_id = ?";
+                break;
+            case 'déterminants':
+                //récupère les déterminants avec leurs accords
+                $query = "SELECT
+                    r.id id_det,
+                    vId.value num,
+                    GROUP_CONCAT(vAnno.value_annotation_id) id_anno,
+
+                    GROUP_CONCAT(vAccEliFemSin.value) EliFemSin,
+                    GROUP_CONCAT(vAccEliMasSin.value) EliMasSin,
+                    GROUP_CONCAT(vAccEliFemPlu.value) EliFemPlu,
+                    GROUP_CONCAT(vAccEliMasPlu.value) EliMasPlu,
+
+                    GROUP_CONCAT(vAccNoEliFemSin.value) NoEliFemSin,
+                    GROUP_CONCAT(vAccNoEliMasSin.value) NoEliMasSin,
+                    GROUP_CONCAT(vAccNoEliFemPlu.value) NoEliFemPlu,
+                    GROUP_CONCAT(vAccNoEliMasPlu.value) NoEliMasPlu
+
+                    FROM resource r
+
+                    INNER JOIN value vDico on vDico.resource_id = r.id AND vDico.property_id = 501 AND vDico.value_resource_id = ?
+
+                    INNER JOIN value vId ON vId.resource_id = r.id AND vId.property_id = 10 
+                    INNER JOIN value vAnno ON vAnno.resource_id = r.id AND vAnno.property_id = 506
+
+                    LEFT JOIN value vAccEli ON vAccEli.resource_id = vAnno.value_annotation_id AND vAccEli.property_id = 195 AND vAccEli.value = 1 
+                    LEFT JOIN value vAccEliFemSin ON vAccEliFemSin.resource_id = vAccEli.resource_id AND vAccEliFemSin.property_id = 502
+                    LEFT JOIN value vAccEliMasSin ON vAccEliMasSin.resource_id = vAccEli.resource_id AND vAccEliMasSin.property_id = 503
+                    LEFT JOIN value vAccEliFemPlu ON vAccEliFemPlu.resource_id = vAccEli.resource_id AND vAccEliFemPlu.property_id = 504
+                    LEFT JOIN value vAccEliMasPlu ON vAccEliMasPlu.resource_id = vAccEli.resource_id AND vAccEliMasPlu.property_id = 505 
+
+                    LEFT JOIN value vAccNoEli ON vAccNoEli.resource_id = vAnno.value_annotation_id AND vAccNoEli.property_id = 195 AND vAccNoEli.value = 0 
+                    LEFT JOIN value vAccNoEliFemSin ON vAccNoEliFemSin.resource_id = vAccNoEli.resource_id AND vAccNoEliFemSin.property_id = 502
+                    LEFT JOIN value vAccNoEliMasSin ON vAccNoEliMasSin.resource_id = vAccNoEli.resource_id AND vAccNoEliMasSin.property_id = 503
+                    LEFT JOIN value vAccNoEliFemPlu ON vAccNoEliFemPlu.resource_id = vAccEli.resource_id AND vAccNoEliFemPlu.property_id = 504
+                    LEFT JOIN value vAccNoEliMasPlu ON vAccNoEliMasPlu.resource_id = vAccNoEli.resource_id AND vAccNoEliMasPlu.property_id = 505
+
+                WHERE r.resource_class_id = 113
+                GROUP BY num";
+                break;            
+            default:
+                //récupère les générateurs à décomposer avec leurs concepts
+                $query = "SELECT rLR.id, vLRt.value type, rLR.title, rLR.resource_class_id, rLR.resource_template_id, 
+                        rcLR.local_name, vLRdesc.value description
+                    from resource r
+                    inner join value vLR on vLR.value_resource_id = r.id
+                    inner join resource rLR on rLR.id = vLR.resource_id
+                    inner join resource_class rcLR on rcLR.id = rLR.resource_class_id
+                    inner join value vLRt on vLRt.resource_id = rLR.id AND vLRt.property_id = 196
+                    left join value vLRdesc on vLRdesc.resource_id = rLR.id AND vLRdesc.property_id = 4
+                    where r.id = ?";
+                break;
+        }
+
         return $this->cnx->fetchAll($query,[$params['idDico']]);
     }
 
-/**
+
+    /**
      * renvoie la liste des modèles de conjugaison
      *
      * @param array    $params paramètre de la requête
@@ -371,7 +526,7 @@ class GenerateurSql extends AbstractHelper
                 rcLR.local_name, vLRt.value type, vDesc.value description
                 , vPrefix.value prefix
                 , vGender.value gender
-                , vConj.value conj
+                , vConj.value_resource_id hasConjugaison
                 , vEli.value eli
                 , vGen.value gen
                 , vAccord.resource_id accord_id
@@ -610,6 +765,31 @@ where r.id = ?";
     }
 
 
+    /**
+     * génére le flux d'un concept à partir de son titre
+     *
+     * @param array   $params paramètre de la fonction
+     *
+    */
+    function getFluxByTitle($params){
+        if(isset($params['idsDico'])){
+            $this->cache['idsDico'] = $params['idsDico'];
+        }
+        //récupère le concept à partir de son titre
+        $query = "SELECT r.id
+            FROM resource r
+            INNER JOIN value v ON v.resource_id = r.id AND v.property_id = 1    
+			INNER JOIN value vDico on vDico.resource_id = r.id and vDico.property_id = 501 and vDico.value_resource_id IN (".$this->cache['idsDico'].") 
+            WHERE r.resource_class_id = 106 AND v.value = ?";
+        $rs = $this->cnx->fetchAll($query,[$params['title']]);
+        if(!$rs){
+            $this->logger->err('Pas de concept trouvé pour le titre : '.$params['title']);
+            return ["error"=>'Pas de concept trouvé pour le titre : '.$params['title']]; 
+        }
+        $this->explodeConcept(['idConcept'=>$rs[0]['id'],'niv'=>1]);
+        return $this->getRandomFlux(['idConcept'=>$rs[0]['id'],'niv'=>1]);
+    }
+
 
     /**
      * Récupère aléatoirement un flux d'un concept
@@ -641,12 +821,14 @@ where r.id = ?";
                 FROM gen_oeuvre_dico_concept_term
                 WHERE concept_id = ?
                 ORDER BY RAND() LIMIT 1) as rndTerm  ON rndTerm.term_id = odct.term_id ";
-        }  
+        }
+        //gestion des paramètres de sélection du générateur
         $query .= " LEFT JOIN gen_flux f ON f.ordre_id = o.id
-        WHERE odct.concept_id = ? ";
+            WHERE odct.concept_id = ? ";
         if(isset($params['idTerm'])) $query .= " AND odct.term_id = ? ";
         $query .= " GROUP BY o.term_id, o.ordre
             ORDER BY o.ordre";
+        
         if(!isset($params['idTerm'])){
             $rs = $this->cnx->fetchAll($query,[$params['idConcept'],$params['idConcept']]);
             if(!$rs){
@@ -672,11 +854,13 @@ where r.id = ?";
                 }
             }
             if($v['type']!="generateur")$this->getTermAccords($v['term_id']);
-            if(strlen($v['det'])>6)$this->getVerbeAccords($rs[$i], $this->cache['idsDico']);
-            //vérifie si le génrateur est un verbe simple
+            if(strlen($v['det'])>6){
+                $this->getVerbeAccords($rs, $i, $this->cache['idsDico']);
+            }
+            //vérifie si le générateur est un verbe simple
             if($v['type']=="generateur" && $v['det']=="" && substr($v['value'],0,2)=="v_"){
                 $rs[$i]['det'] = "01000000";//le déterminant est la troisième personne du singulier
-                $this->getVerbeAccords($rs[$i], $this->cache['idsDico']);
+                $this->getVerbeAccords($rs, $i, $this->cache['idsDico']);
             }
 
             //supprime les valeurs nulles
@@ -694,23 +878,28 @@ where r.id = ?";
         return $rs;
     }
 
-    function getVerbeAccords($flux,$idsDico){ 
+    function getVerbeAccords($rs,$i,$idsDico){ 
+
+        $flux= $rs[$i];
 
         //dans le cas d'un verbe théorique on ne fait rien
 		if($flux["value"]=="v_théorique")return $flux; 
-
-        //récupère le déterminant du verbe
-        $this->getDetVerbe($flux['det'], $idsDico);
         
         //récupère le temps
         $mood = $this->temps[$flux["det"][1]];
         //récupère la personne
         switch ($flux["det"][2]) {
             case 7:
-            case 9:
-                $p = $this->personnes[6];
-                break;            
             case 8:
+                //récupère le singulier ou le pluriel
+                for ($j=$i; $j >= 0; $j--) { 
+                    if($rs[$j]['det']!=""){
+                        $p = intval($rs[$j]['det'])>50 ? $this->personnes[6] : $this->personnes[3];
+                        $j=-1; //sort de la boucle
+                    }
+                }
+                $p = $p ? $p : $this->personnes[3];
+                break;            
             case 0:
                 $p = $this->personnes[3];
                 break;            
@@ -731,6 +920,10 @@ where r.id = ?";
         $acc = $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0];
         $rs = $this->cnx->fetchAssoc($query,[$mood,$p[2],$acc['idConj']]);
         $this->cache['accords'][$flux['cpt1_flux'][0]['term_id']][0]['tms']=$rs['value']=="---" || $rs['value']=="- " ? "" : $rs['value'];		
+
+
+        //récupère le déterminant du verbe
+        $this->getDetVerbe($flux['det'], $idsDico);
 
         //récupère la négation
         if($flux['det'][0]!=""){
@@ -796,9 +989,9 @@ where r.id = ?";
             $query = "SELECT 
                 r.id,
                 r.resource_class_id class,
-                vTitle.value lib 
+                vPrefix.value lib 
                 FROM resource r
-                    INNER JOIN value vTitle ON vTitle.resource_id = r.id AND vTitle.property_id = 1
+                    INNER JOIN value vPrefix ON vPrefix.resource_id = r.id AND vPrefix.property_id = 185
                 WHERE r.id = ? ";
             $this->cache['accords']["syn".$idSyn] = $this->cnx->fetchAssoc($query,[$idSyn]);
         }
@@ -874,6 +1067,11 @@ group by vAnno.resource_id";
                 $rs = $this->cnx->fetchAssoc($query,[intval($id),$type]);
                 if($rs['lib']=="[=1|a_zéro]")$rs['lib']="";
                 if($rs['eli']=="[=1|a_zéro]")$rs['el']="";
+                if($rs['lib']=="[=1|a_il]"){
+                    $gen = $this->getFluxByTitle(['title'=>"a_il"]);
+                    $this->cache['accords']["a_il"]= $gen['flux'][0]['term_id'];
+                }
+                
                 $this->cache['pronoms'][$id.$type.'_'.$idDicos] = $rs;
         }
         return $this->cache['pronoms'][$id.$type.'_'.$idDicos];
@@ -926,7 +1124,7 @@ group by vAnno.resource_id";
                 VALUES (?, ?, ?, ?, ?)";
             $this->cnx->executeQuery($insert,[$gen,$compo['syn'],$compo['det'],$compo['cpt1'],$compo['cpt2']]);
             $this->cache['codes'][$gen]=$this->cnx->fetchAssoc("SELECT * FROM gen_code WHERE id=".$this->cnx->lastInsertId());
-        }elseif (!isset($rsCode['cpt1'])) {//ou s'il n'a pas de cpt1
+        }elseif (!isset($rsCode['cpt1']) && !isset($rsCode['syn'])) {//ou s'il n'a pas de cpt1
             //décompose le générateur
             $compo = $this->moteur->explodeCode($gen);
             //ajoute le code du générateur                        
@@ -989,12 +1187,11 @@ group by vAnno.resource_id";
         if(strlen($det) > 6)return;
 
         //vérifie si le déterminant est un syntagme
-        if(substr($det,-1)=='#'){
+        if(substr($det,0,1)=='#'){
             $query = 'SELECT r.id FROM resource r 
-                INNER JOIN value vDico on vDico.resource_id = r.id AND vDico.property_id = 501 AND vDico.value_resource_id IN ('.$idsDico.') 
                 INNER JOIN value v on v.resource_id = r.id AND v.property_id = 10 AND v.value = ? 
-                WHERE r.resource_class_id = 114';
-            $rs = $this->cnx->fetchAssoc($query,[substr($det,0,-1)]);
+                WHERE r.resource_class_id = 107';
+            $rs = $this->cnx->fetchAssoc($query,[substr($det,1)]);
             $this->cache['determinants'][$det.'-'.$idsDico] = $rs['id'];
             return $this->cache['determinants'][$det.'-'.$idsDico];
         };
@@ -1016,6 +1213,34 @@ group by vAnno.resource_id";
         return $this->cache['determinants'][$det.'-'.$idsDico];
     }
 
+    /**
+     * récupère les dicos liés à une oeuvre
+     *
+     * @param   integer    $idOeu l'identifiant de l'oeuvre
+     * @return array
+     */
+    function getDicosOeuvres($idOeu){
+
+        //vérifie si les oeuvres sont déjà en cache
+        if(isset($this->cache['dicosOeu'][$idOeu])){
+            return $this->cache['dicosOeu'][$idOeu];
+        }
+        
+        $query="SELECT vOeuvreDicos.value_resource_id idDico
+            FROM
+                resource r
+                    INNER JOIN
+                value vOeuvreDicos ON vOeuvreDicos.resource_id = r.id
+                    AND vOeuvreDicos.property_id = 501
+            WHERE
+                r.id = ?";
+        $this->cache['dicosOeu'][$idOeu] = $this->cnx->fetchAll($query,[$idOeu]);
+        if(count($this->cache['dicosOeu'][$idOeu])==0){
+            $this->logger->err("Pas de dico associés à l'oeuvre : ".$idOeu);
+        }
+        
+        return $this->cache['dicosOeu'][$idOeu];
+    }
 
 
     /**
@@ -1542,11 +1767,52 @@ WHERE
     */
 
 
-    /*Vérification des terms sans dico
+/*Vérification des terms sans dico
     SELECT count(*) nb, 
 vHasDico.value_resource_id, rDico.title	
 from resource r
 inner join value vHasDico on vHasDico.resource_id = r.id and vHasDico.property_id = 501
 inner join resource rDico on rDico.id = vHasDico.value_resource_id 
 group by vHasDico.value_resource_id
+*/
+
+/*Vérification des types de terms
+SELECT v.value, count(*) nb 
+FROM value v
+INNER join resource r on r.id = v.resource_id and r.resource_class_id = 107
+WHERE v.property_id = 196
+group by v.value;
+*/
+
+/*Extraction des concepts et des termes associés dans la base de données ancienne
+SELECT c.id_concept,c.id_dico,c.lib,c.type
+,s.id_sub,s.elision sEli,s.prefix sPre,s.genre,s.s,s.p	
+,a.id_adj,a.elision aEli,a.prefix aPre,a.m_s,a.f_s,a.m_p,a.f_p
+,v.id_verbe,v.id_conj,v.elision vEli,v.prefix vPre
+,g.id_gen,g.valeur 
+,sy.id_syn, sy.num, sy.ordre, sy.lib syLib
+FROM gen_concepts c
+left join gen_concepts_substantifs cs on cs.id_concept = c.id_concept
+left join gen_substantifs s on s.id_sub = cs.id_sub
+left join gen_concepts_adjectifs ca on ca.id_concept = c.id_concept
+left join gen_adjectifs a on a.id_adj = ca.id_adj
+left join gen_concepts_verbes cv on cv.id_concept = c.id_concept
+left join gen_verbes v on v.id_verbe = cv.id_verbe
+left join gen_concepts_generateurs cg on cg.id_concept = c.id_concept
+left join gen_generateurs g on g.id_gen = cg.id_gen
+left join gen_concepts_syntagmes csy on csy.id_concept = c.id_concept
+left join gen_syntagmes sy on sy.id_syn = csy.id_syn
+WHERE c.id_dico = 34
+ORDER BY c.id_concept;
+*/
+
+/*pour récup&rer les doublons sur les titres
+SELECT 
+count(*) nb, v.value, group_concat(r.id),group_concat(r.resource_class_id)
+FROM resource r
+inner join value v on v.resource_id = r.id AND v.property_id = 1
+WHERE r.resource_class_id = 107
+group by v.value
+having nb > 1
+order by nb desc;
 */
