@@ -93,6 +93,9 @@ class GenerateurSql extends AbstractHelper
                 //ATTENTION DANGEREUX : la suppression d'un concept supprime TOUTES les ressources associées 
                 $result = $this->deleteResource($params['id']);
                 break;
+            case 'getDicos':
+                $result = $this->getDicos($params);
+                break;
             case 'getDicoItems':
                 $result = $this->getDicoItems($params);
                 break;
@@ -493,6 +496,26 @@ class GenerateurSql extends AbstractHelper
         }
 
         return $this->cnx->fetchAll($query,[$params['idDico']]);
+    }
+
+    /**
+     * renvoie la liste des dictionnaire pour une oeuvre
+     *
+     * @param array    $params paramètre de la requête
+     * @return array
+     */
+    function getDicos($params){
+
+        $query = "SELECT r.id, r.title, vGeneral.value general, vType.value type
+            FROM resource r
+            inner join value vOeuvre on vOeuvre.value_resource_id = r.id and vOeuvre.property_id = 501
+            inner join value vGeneral on vGeneral.resource_id = r.id and vGeneral.property_id = 508
+            inner join value vType on vType.resource_id = r.id and vType.property_id = 196
+            where vOeuvre.resource_id=?
+            group by r.id
+            order by r.title";
+
+        return $this->cnx->fetchAll($query,[$params['idOeu']]);
     }
 
 
